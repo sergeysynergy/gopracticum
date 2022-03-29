@@ -1,3 +1,3 @@
-module sergeysynergy/gopracticum-sprint1
+module github.com/sergeysynergy/gopracticum
 
 go 1.17
