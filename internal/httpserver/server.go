@@ -13,9 +13,8 @@ import (
 )
 
 type Config struct {
-	Address         string // адрес сервера куда отправлять метрики
-	Port            string
-	ShutdownTimeout time.Duration // отсрочка завершения работы по сигналу прерывания
+	Address string // адрес сервера куда отправлять метрики
+	Port    string
 }
 
 type Server struct {

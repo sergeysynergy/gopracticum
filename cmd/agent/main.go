@@ -14,8 +14,8 @@ func init() {
 
 func main() {
 	cfg := agent.Config{
-		PollInterval:   2 * time.Second,  // in prod 2
-		ReportInterval: 10 * time.Second, // in prod 10
+		PollInterval:   1 * time.Second, // in prod 2
+		ReportInterval: 2 * time.Second, // in prod 10
 		Address:        "127.0.0.1",
 		Port:           ":8080",
 	}

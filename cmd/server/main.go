@@ -1,15 +1,12 @@
 package main
 
 import (
-	"time"
-
 	"github.com/sergeysynergy/gopracticum/internal/httpserver"
 )
 
 func main() {
 	cfg := httpserver.Config{
-		Port:            "8080",
-		ShutdownTimeout: 2 * time.Millisecond,
+		Port: "8080",
 	}
 	s := httpserver.New(cfg)
 
