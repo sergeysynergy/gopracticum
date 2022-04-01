@@ -36,12 +36,12 @@ func accessLogMiddleware(next http.Handler) http.Handler {
 func preChecksMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
-			http.Error(w, "Only POST requests are allowed!", http.StatusBadRequest)
+			http.Error(w, "Only POST requests are allowed!", http.StatusMethodNotAllowed)
 			return
 		}
 
 		if r.Header.Get("Content-Type") != "text/plain" {
-			http.Error(w, "Only text/plain content-type allowed!", http.StatusBadRequest)
+			http.Error(w, "Only text/plain content-type allowed!", 422)
 			return
 		}
 

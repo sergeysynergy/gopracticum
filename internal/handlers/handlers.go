@@ -54,7 +54,7 @@ func (c *Counter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if params[4] == "" {
-		http.Error(w, "Wrong value!", http.StatusBadRequest)
+		http.Error(w, "Wrong value!", http.StatusNotAcceptable)
 		return
 	}
 
