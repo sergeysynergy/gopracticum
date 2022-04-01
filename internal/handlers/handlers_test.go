@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -69,7 +71,15 @@ func TestServeHTTP(t *testing.T) {
 			}
 
 			result := w.Result()
+
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+
+			// Чтобы повторно использовать кешированное TCP-соединение, клиент должен обязательно прочитать
+			// тело ответа до конца и закрыть, даже если оно не нужно.
+			_, err := ioutil.ReadAll(result.Body)
+			require.NoError(t, err)
+			err = result.Body.Close()
+			require.NoError(t, err)
 		})
 	}
 }
