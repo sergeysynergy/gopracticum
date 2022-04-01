@@ -1,17 +1,14 @@
 package main
 
 import (
-	"time"
-
-	"github.com/sergeysynergy/gopracticum/internal/httpserver"
+	"fmt"
+	"net/http"
 )
 
 func main() {
-	cfg := httpserver.Config{
-		Port:            "8080",
-		ShutdownTimeout: 2 * time.Millisecond,
-	}
-	s := httpserver.New(cfg)
-
-	s.Serve()
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	})
+	fmt.Println("starting server at :8080")
+	http.ListenAndServe(":8080", nil)
 }
