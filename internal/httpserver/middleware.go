@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type Middleware func(http.Handler) http.Handler
+
+func Conveyor(h http.Handler, middlewares ...Middleware) http.Handler {
+	for _, middleware := range middlewares {
+		h = middleware(h)
+	}
+	return h
+}
+
 func panicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -40,10 +49,10 @@ func preChecksMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		//if r.Header.Get("Content-Type") != "text/plain" {
-		//	http.Error(w, "Only text/plain content-type allowed!", http.StatusUnprocessableEntity)
-		//	return
-		//}
+		if r.Header.Get("Content-Type") != "text/plain" {
+			http.Error(w, "Only text/plain content-type allowed!", http.StatusUnprocessableEntity)
+			return
+		}
 
 		next.ServeHTTP(w, r)
 	})
