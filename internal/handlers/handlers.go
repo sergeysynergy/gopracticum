@@ -24,7 +24,7 @@ func (g *Gauge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	params := strings.Split(r.URL.Path, "/")
 
 	if len(params) != 5 {
-		http.Error(w, "Wrong parameters number!", http.StatusBadRequest)
+		http.Error(w, "Wrong parameters number!", http.StatusNotFound)
 		return
 	}
 	if params[4] == "" {
@@ -50,7 +50,7 @@ func (c *Counter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	params := strings.Split(r.URL.Path, "/")
 
 	if len(params) != 5 {
-		http.Error(w, "Wrong parameters number!", http.StatusBadRequest)
+		http.Error(w, "Wrong parameters number!", http.StatusNotFound)
 		return
 	}
 	if params[4] == "" {
@@ -77,4 +77,9 @@ func (c *Check) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(c.ToJSON())
+}
+
+func NotImplemented(w http.ResponseWriter, r *http.Request) {
+	err := fmt.Errorf("not implemented")
+	http.Error(w, err.Error(), http.StatusNotImplemented)
 }

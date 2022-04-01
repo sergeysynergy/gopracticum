@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/sergeysynergy/gopracticum/internal/handlers"
@@ -37,6 +36,7 @@ func New(cfg Config) *Server {
 	mux.Handle("/update/gauge/", gaugeHandler)
 	mux.Handle("/update/counter/", counterHandler)
 	mux.Handle("/check", checkHandler)
+	mux.HandleFunc("/update/", handlers.NotImplemented)
 
 	// Добавляем middleware.
 	mainHandler := http.Handler(mux)
@@ -62,22 +62,30 @@ func New(cfg Config) *Server {
 }
 
 func (s *Server) Serve() {
+	idleConnsClosed := make(chan struct{})
 	go func() {
-		log.Printf("HTTP-server started at: %s\n", s.Addr)
-		log.Fatal(s.ListenAndServe())
+		// Штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT.
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+
+		// Пришёл сигнал завершить работу: штатно завершаем работу сервера, не прерывая никаких активных подключений.
+		// Завершение работы выполняется в порядке:
+		// - закрытия всех открытых подключений;
+		// - затем закрытия всех незанятых подключений;
+		// - а затем бесконечного ожидания возврата подключений в режим ожидания;
+		// - наконец, завершения работы.
+		if err := s.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
 	}()
 
-	// Штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT.
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	sig := <-stop
-	log.Println("Got server shutdown signal:", sig)
-	log.Printf("Awaiting %v seconds for shutdown", s.Cfg.ShutdownTimeout)
-	time.Sleep(s.Cfg.ShutdownTimeout)
-
-	err := s.Shutdown(s.ctx)
-	if err != nil {
-		log.Println("[ERROR]", err.Error())
-		return
+	log.Printf("HTTP-server started at: %s\n", s.Addr)
+	if err := s.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("HTTP server ListenAndServe: %v", err)
 	}
+
+	<-idleConnsClosed
 }

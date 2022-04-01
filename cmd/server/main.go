@@ -8,7 +8,6 @@ import (
 
 func main() {
 	cfg := httpserver.Config{
-		Address:         "127.0.0.1",
 		Port:            "8080",
 		ShutdownTimeout: 2 * time.Millisecond,
 	}
