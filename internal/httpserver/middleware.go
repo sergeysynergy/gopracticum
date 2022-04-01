@@ -41,7 +41,7 @@ func preChecksMiddleware(next http.Handler) http.Handler {
 		}
 
 		if r.Header.Get("Content-Type") != "text/plain" {
-			http.Error(w, "Only text/plain content-type allowed!", 422)
+			http.Error(w, "Only text/plain content-type allowed!", http.StatusUnprocessableEntity)
 			return
 		}
 
