@@ -34,7 +34,7 @@ func TestPreChecksMiddleware(t *testing.T) {
 			target:      "/update/counter/testCounter/42",
 			contentType: "application/json",
 			want: want{
-				statusCode: 422,
+				statusCode: http.StatusUnprocessableEntity,
 			},
 		},
 		{
