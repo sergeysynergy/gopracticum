@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
@@ -34,6 +35,30 @@ func (s *Storage) Count(key metrics.Name, val metrics.Counter) {
 	}
 
 	s.Counters[key] += val
+}
+
+func (s *Storage) GetGauge(key metrics.Name) (*metrics.Gauge, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	gauge, ok := s.Gauges[key]
+	if !ok {
+		return nil, fmt.Errorf("gauge metric with key '%s' not found", key)
+	}
+
+	return &gauge, nil
+}
+
+func (s *Storage) GetCounter(key metrics.Name) (*metrics.Counter, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	counter, ok := s.Counters[key]
+	if !ok {
+		return nil, fmt.Errorf("counter metric with key '%s' not found", key)
+	}
+
+	return &counter, nil
 }
 
 // ToJSON Вывод содержимого хранилища в формате JSON для тестовых целей.

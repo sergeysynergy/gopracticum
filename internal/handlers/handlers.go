@@ -1,15 +1,15 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
-	"net/http"
-	"strings"
-
+	"github.com/go-chi/chi/v5"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"net/http"
 )
 
-type Gauge struct {
+type Handler struct {
 	*storage.Storage
 }
 
@@ -20,66 +20,87 @@ type Check struct {
 	*storage.Storage
 }
 
-func (g *Gauge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	params := strings.Split(r.URL.Path, "/")
-
-	if len(params) != 5 {
-		http.Error(w, "Wrong parameters number!", http.StatusNotFound)
-		return
-	}
-	if params[4] == "" {
-		http.Error(w, "Wrong value!", http.StatusNotAcceptable)
-		return
-	}
-
-	metricName := metrics.Name(params[3])
+func (h *Handler) PostGauge(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	value := chi.URLParam(r, "value")
 
 	var gauge metrics.Gauge
-	err := gauge.FromString(params[4])
+	err := gauge.FromString(value)
 	if err != nil {
-		msg := fmt.Sprintf("value %v not acceptable - %v", params[4], err)
+		msg := fmt.Sprintf("value %v not acceptable - %v", name, err)
 		http.Error(w, msg, http.StatusNotAcceptable)
 		return
 	}
-	g.Put(metricName, gauge)
+	h.Put(metrics.Name(name), gauge)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *Counter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	params := strings.Split(r.URL.Path, "/")
+func (h *Handler) GetGauge(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
 
-	if len(params) != 5 {
-		http.Error(w, "Wrong parameters number!", http.StatusNotFound)
-		return
-	}
-	if params[4] == "" {
-		http.Error(w, "Wrong value!", http.StatusNotAcceptable)
+	gouge, err := h.Storage.GetGauge(metrics.Name(name))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	metricName := metrics.Name(params[3])
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%f", *gouge)))
+}
+
+func (h *Handler) PostCounter(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	value := chi.URLParam(r, "value")
 
 	var counter metrics.Counter
-	err := counter.FromString(params[4])
+	err := counter.FromString(value)
 	if err != nil {
-		msg := fmt.Sprintf("value %v not acceptable - %v", params[4], err)
+		msg := fmt.Sprintf("value %v not acceptable - %v", name, err)
 		http.Error(w, msg, http.StatusNotAcceptable)
 		return
 	}
-	c.Count(metricName, counter)
+	h.Count(metrics.Name(name), counter)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-// Хэндлер для визуальной проверки результатов работы.
-func (c *Check) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
+func (h *Handler) GetCounter(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+
+	counter, err := h.Storage.GetCounter(metrics.Name(name))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(c.ToJSON())
+	w.Write([]byte(fmt.Sprintf("%d", *counter)))
 }
 
-func NotImplemented(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("content-type", "text/HTML")
+	w.WriteHeader(http.StatusOK)
+
+	var b bytes.Buffer
+	b.WriteString("<h1>Current metrics data:</h1>")
+
+	b.WriteString(`<div><h2>Gauges</h2>`)
+	for k, val := range h.Gauges {
+		b.WriteString(fmt.Sprintf("<div>%s - %f</div>", k, val))
+	}
+	b.WriteString(`</div>`)
+
+	b.WriteString(`<div><h2>Counters</h2>`)
+	for k, val := range h.Counters {
+		b.WriteString(fmt.Sprintf("<div>%s - %d</div>", k, val))
+	}
+	b.WriteString(`</div>`)
+
+	w.Write(b.Bytes())
+}
+
+func NotImplemented(w http.ResponseWriter, _ *http.Request) {
 	err := fmt.Errorf("not implemented")
 	http.Error(w, err.Error(), http.StatusNotImplemented)
 }

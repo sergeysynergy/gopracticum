@@ -2,47 +2,50 @@ package httpserver
 
 import (
 	"context"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sergeysynergy/gopracticum/internal/handlers"
+	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
-
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
 type Config struct {
-	Address string // адрес сервера куда отправлять метрики
-	Port    string
+	Address      string
+	Port         string
+	GraceTimeout time.Duration // время на штатное завершения работы сервера
 }
 
 type Server struct {
 	*http.Server
 	Cfg Config
-	ctx context.Context
+	//ctx context.Context
 }
 
 func New(cfg Config) *Server {
+	// определяем общее хранилище метрик
 	st := storage.New()
-	gaugeHandler := &handlers.Gauge{Storage: st}
-	counterHandler := &handlers.Counter{Storage: st}
-	checkHandler := &handlers.Check{Storage: st}
 
-	// Шаблон роутов http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
-	// Объявляем роуты используя штатный маршрутизатор пакета http.
-	mux := http.NewServeMux()
-	mux.Handle("/update/gauge/", gaugeHandler)
-	mux.Handle("/update/counter/", counterHandler)
-	mux.Handle("/check", checkHandler)
-	mux.HandleFunc("/update/", handlers.NotImplemented)
+	// задаём обработчики с доступом к общему хранилищу
+	handler := &handlers.Handler{Storage: st}
 
-	// Добавляем middleware.
-	mainHandler := http.Handler(mux)
-	mainHandler = preChecksMiddleware(mainHandler)
-	mainHandler = accessLogMiddleware(mainHandler)
-	mainHandler = panicMiddleware(mainHandler)
+	// созданим новый роутер
+	r := chi.NewRouter()
 
+	// зададим встроенные middleware, чтобы улучшить стабильность приложения
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	// определим маршруты
+	getRoutes(r, handler)
+
+	// объявим HTTP-сервер
 	addr := cfg.Address + ":" + cfg.Port
 	s := &Server{
 		Cfg: cfg,
@@ -52,39 +55,75 @@ func New(cfg Config) *Server {
 			WriteTimeout:   time.Second * 10,
 			IdleTimeout:    time.Second * 10, // максимальное время ожидания следующего запроса
 			MaxHeaderBytes: 1 << 20,          // 2^20 = 128 Kb
-			Handler:        mainHandler,
+			Handler:        r,
 		},
-		ctx: context.Background(),
 	}
 
 	return s
 }
 
-func (s *Server) Serve() {
-	idleConnsClosed := make(chan struct{})
-	go func() {
-		// Штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT.
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
+func getRoutes(r chi.Router, handler *handlers.Handler) chi.Router {
+	// объявим роуты используя маршрутизатор chi
+	r.Get("/", handler.List)
 
-		// Пришёл сигнал завершить работу: штатно завершаем работу сервера, не прерывая никаких активных подключений.
+	// шаблон роутов POST http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
+	r.Route("/update/", func(r chi.Router) {
+		r.Post("/*", handlers.NotImplemented)
+		r.Get("/gauge/{name}/{value}", handler.GetGauge)
+		r.Post("/gauge/{name}/{value}", handler.PostGauge)
+		r.Post("/counter/{name}/{value}", handler.PostCounter)
+	})
+
+	// шаблон роутов GET http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
+	r.Route("/value/", func(r chi.Router) {
+		r.Get("/gauge/{name}", handler.GetGauge)
+		r.Get("/counter/{name}", handler.GetCounter)
+	})
+
+	return r
+}
+
+func (s *Server) Serve() {
+	// зададим контекст выполнения сервера
+	serverCtx, serverStopCtx := context.WithCancel(context.Background())
+
+	// штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		<-sig
+
+		// определяем время для штатного завершения работы сервера
+		shutdownCtx, _ := context.WithTimeout(serverCtx, s.Cfg.GraceTimeout)
+
+		go func() {
+			<-shutdownCtx.Done()
+			if shutdownCtx.Err() == context.DeadlineExceeded {
+				log.Fatal("graceful shutdown timed out.. forcing exit.")
+			}
+		}()
+
+		// Пришёл сигнал завершить работу: штатно завершаем работу сервера не прерывая никаких активных подключений.
 		// Завершение работы выполняется в порядке:
 		// - закрытия всех открытых подключений;
 		// - затем закрытия всех незанятых подключений;
 		// - а затем бесконечного ожидания возврата подключений в режим ожидания;
 		// - наконец, завершения работы.
-		if err := s.Shutdown(context.Background()); err != nil {
-			// Error from closing listeners, or context timeout:
-			log.Printf("HTTP server Shutdown: %v", err)
+		err := s.Shutdown(shutdownCtx)
+		if err != nil {
+			log.Fatal(err)
 		}
-		close(idleConnsClosed)
+		serverStopCtx()
 	}()
 
-	log.Printf("HTTP-server started at: %s\n", s.Addr)
-	if err := s.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatalf("HTTP server ListenAndServe: %v", err)
+	// запустим сервер
+	addr := s.Cfg.Address + ":" + s.Cfg.Port
+	log.Printf("starting HTTP-server at %s\n", addr)
+	err := s.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
 	}
 
-	<-idleConnsClosed
+	// ожидаем сигнала остановки сервера через context
+	<-serverCtx.Done()
 }
