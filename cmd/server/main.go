@@ -24,7 +24,7 @@ func main() {
 
 	cfg := httpserver.Config{
 		Port:         port,
-		GraceTimeout: 2 * time.Second,
+		GraceTimeout: 20 * time.Second,
 	}
 	s := httpserver.New(cfg)
 

@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
@@ -31,7 +30,7 @@ func New(cfg Config) *Server {
 	st := storage.New()
 
 	// задаём обработчики с доступом к общему хранилищу
-	handler := &handlers.Handler{Storage: st}
+	handler := &Handler{Storage: st}
 
 	// созданим новый роутер
 	r := chi.NewRouter()
@@ -63,21 +62,14 @@ func New(cfg Config) *Server {
 }
 
 // объявим роуты, используя маршрутизатор chi
-func getRoutes(r chi.Router, handler *handlers.Handler) chi.Router {
+func getRoutes(r chi.Router, handler *Handler) chi.Router {
 	r.Get("/", handler.List)
 
 	// шаблон роутов POST http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
-	r.Route("/update/", func(r chi.Router) {
-		r.Get("/gauge/{name}/{value}", handler.GetGauge)
-		r.Post("/gauge/{name}/{value}", handler.PostGauge)
-		r.Post("/counter/{name}/{value}", handler.PostCounter)
-	})
+	r.Post("/update/{type}/{name}/{value}", handler.Post)
 
 	// шаблон роутов GET http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
-	r.Route("/value/", func(r chi.Router) {
-		r.Get("/gauge/{name}", handler.GetGauge)
-		r.Get("/counter/{name}", handler.GetCounter)
-	})
+	r.Get("/value/{type}/{name}", handler.Get)
 
 	return r
 }
