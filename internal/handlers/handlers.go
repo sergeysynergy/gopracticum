@@ -7,6 +7,7 @@ import (
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"net/http"
+	"strconv"
 )
 
 type Handler struct {
@@ -28,7 +29,7 @@ func (h *Handler) PostGauge(w http.ResponseWriter, r *http.Request) {
 	err := gauge.FromString(value)
 	if err != nil {
 		msg := fmt.Sprintf("value %v not acceptable - %v", name, err)
-		http.Error(w, msg, http.StatusNotAcceptable)
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 	h.Put(metrics.Name(name), gauge)
@@ -39,14 +40,15 @@ func (h *Handler) PostGauge(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetGauge(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 
-	gouge, err := h.Storage.GetGauge(metrics.Name(name))
+	gauge, err := h.Storage.GetGauge(metrics.Name(name))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%f", *gouge)))
+	val := strconv.FormatFloat(float64(*gauge), 'f', -1, 64)
+	w.Write([]byte(val))
 }
 
 func (h *Handler) PostCounter(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +59,7 @@ func (h *Handler) PostCounter(w http.ResponseWriter, r *http.Request) {
 	err := counter.FromString(value)
 	if err != nil {
 		msg := fmt.Sprintf("value %v not acceptable - %v", name, err)
-		http.Error(w, msg, http.StatusNotAcceptable)
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 	h.Count(metrics.Name(name), counter)
