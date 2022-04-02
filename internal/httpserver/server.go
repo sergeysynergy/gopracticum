@@ -24,7 +24,6 @@ type Config struct {
 type Server struct {
 	*http.Server
 	Cfg Config
-	//ctx context.Context
 }
 
 func New(cfg Config) *Server {
@@ -63,8 +62,8 @@ func New(cfg Config) *Server {
 	return s
 }
 
+// объявим роуты, используя маршрутизатор chi
 func getRoutes(r chi.Router, handler *handlers.Handler) chi.Router {
-	// объявим роуты используя маршрутизатор chi
 	r.Get("/", handler.List)
 
 	// шаблон роутов POST http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>

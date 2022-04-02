@@ -36,9 +36,6 @@ func New(cfg Config) (*Agent, error) {
 	if cfg.ReportInterval == 0 {
 		return nil, fmt.Errorf("необходимо задать ReportInterval")
 	}
-	if cfg.Address == "" {
-		return nil, fmt.Errorf("необходимо задать адрес сервера")
-	}
 	if cfg.Port == "" {
 		return nil, fmt.Errorf("необходимо задать порт сервера")
 	}
@@ -129,11 +126,13 @@ func (a *Agent) sendRequest(ctx context.Context, wg *sync.WaitGroup, key metrics
 	// http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
 	var endpoint string
 
+	addr := a.Cfg.Address + ":" + a.Cfg.Port
+
 	switch metric := value.(type) {
 	case metrics.Gauge:
-		endpoint = fmt.Sprintf("http://%s%s/update/%s/%s/%f", a.Cfg.Address, a.Cfg.Port, "gauge", key, metric)
+		endpoint = fmt.Sprintf("http://%s/update/%s/%s/%f", addr, "gauge", key, metric)
 	case metrics.Counter:
-		endpoint = fmt.Sprintf("http://%s%s/update/%s/%s/%d", a.Cfg.Address, a.Cfg.Port, "counter", key, metric)
+		endpoint = fmt.Sprintf("http://%s/update/%s/%s/%d", addr, "counter", key, metric)
 	default:
 		a.handleError(fmt.Errorf("неизвестный тип метрики"))
 		return
