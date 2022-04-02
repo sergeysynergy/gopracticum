@@ -14,13 +14,6 @@ type Handler struct {
 	*storage.Storage
 }
 
-type Counter struct {
-	*storage.Storage
-}
-type Check struct {
-	*storage.Storage
-}
-
 func (h *Handler) PostGauge(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	value := chi.URLParam(r, "value")

@@ -68,7 +68,6 @@ func getRoutes(r chi.Router, handler *handlers.Handler) chi.Router {
 
 	// шаблон роутов POST http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
 	r.Route("/update/", func(r chi.Router) {
-		//r.Post("/*", handlers.NotImplemented)
 		r.Get("/gauge/{name}/{value}", handler.GetGauge)
 		r.Post("/gauge/{name}/{value}", handler.PostGauge)
 		r.Post("/counter/{name}/{value}", handler.PostCounter)
