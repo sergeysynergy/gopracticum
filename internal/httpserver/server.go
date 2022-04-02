@@ -94,7 +94,8 @@ func (s *Server) Serve() {
 		<-sig
 
 		// определяем время для штатного завершения работы сервера
-		shutdownCtx, _ := context.WithTimeout(serverCtx, s.Cfg.GraceTimeout)
+		shutdownCtx, cancel := context.WithTimeout(serverCtx, s.Cfg.GraceTimeout)
+		defer cancel()
 
 		go func() {
 			<-shutdownCtx.Done()
