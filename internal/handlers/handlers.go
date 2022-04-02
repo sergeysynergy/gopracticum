@@ -82,8 +82,9 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	b.WriteString("<h1>Current metrics data:</h1>")
 
 	b.WriteString(`<div><h2>Gauges</h2>`)
-	for k, val := range h.Gauges {
-		b.WriteString(fmt.Sprintf("<div>%s - %f</div>", k, val))
+	for k, gauge := range h.Gauges {
+		val := strconv.FormatFloat(float64(gauge), 'f', -1, 64)
+		b.WriteString(fmt.Sprintf("<div>%s - %v</div>", k, val))
 	}
 	b.WriteString(`</div>`)
 
