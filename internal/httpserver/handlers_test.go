@@ -63,6 +63,7 @@ func TestPost(t *testing.T) {
 
 			resp, _ := testRequest(t, ts, http.MethodPost, tt.request)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
+			resp.Body.Close()
 		})
 	}
 }
