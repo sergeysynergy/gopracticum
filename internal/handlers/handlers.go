@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"net/http"
 	"strconv"
+
+	"github.com/sergeysynergy/gopracticum/internal/storage"
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 type Handler struct {

@@ -22,7 +22,7 @@ func TestRouter(t *testing.T) {
 		{
 			name:    "ok list",
 			request: "/",
-			handler: Check{},
+			handler: Handler{},
 			want: want{
 				statusCode: 200,
 			},
@@ -38,7 +38,7 @@ func TestRouter(t *testing.T) {
 		{
 			name:    "ok counter",
 			request: "/update/counter/PollCount/1",
-			handler: Counter{},
+			handler: Handler{},
 			want: want{
 				statusCode: 200,
 			},
@@ -53,7 +53,7 @@ func TestRouter(t *testing.T) {
 		},
 		{
 			name:    "counter 404",
-			handler: Counter{},
+			handler: Handler{},
 			request: "/update/counter/",
 			want: want{
 				statusCode: 404,
