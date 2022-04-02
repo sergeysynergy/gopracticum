@@ -12,9 +12,6 @@ import (
 )
 
 func TestPost(t *testing.T) {
-	handler := &Handler{
-		Storage: storage.New(),
-	}
 	type want struct {
 		statusCode int
 		value      string
@@ -22,17 +19,11 @@ func TestPost(t *testing.T) {
 	tests := []struct {
 		name    string
 		request string
-		method  string
-		pattern string
-		handler http.HandlerFunc
 		want    want
 	}{
 		{
 			name:    "Post gauge ok",
 			request: "/update/gauge/Alloc/65637.019",
-			method:  http.MethodPost,
-			pattern: "/update/{type}/{name}/{value}",
-			handler: handler.Post,
 			want: want{
 				statusCode: http.StatusOK,
 			},
@@ -40,9 +31,6 @@ func TestPost(t *testing.T) {
 		{
 			name:    "Post counter ok",
 			request: "/update/counter/PollCount/1",
-			method:  http.MethodPost,
-			pattern: "/update/{type}/{name}/{value}",
-			handler: handler.Post,
 			want: want{
 				statusCode: http.StatusOK,
 			},
@@ -50,9 +38,6 @@ func TestPost(t *testing.T) {
 		{
 			name:    "Post unknown metric",
 			request: "/update/unknown/testCounter/100",
-			method:  http.MethodPost,
-			pattern: "/update/{type}/{name}/{value}",
-			handler: handler.Post,
 			want: want{
 				statusCode: http.StatusNotImplemented,
 			},
@@ -60,9 +45,6 @@ func TestPost(t *testing.T) {
 		{
 			name:    "Post not found",
 			request: "/update/",
-			method:  http.MethodPost,
-			pattern: "/update/{type}/{name}/{value}",
-			handler: handler.Post,
 			want: want{
 				statusCode: http.StatusNotFound,
 			},
@@ -70,13 +52,16 @@ func TestPost(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			handler := &Handler{
+				Storage: storage.New(),
+			}
 			r := chi.NewRouter()
-			r.Post(tt.pattern, tt.handler)
+			r.Post("/update/{type}/{name}/{value}", handler.Post)
 
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
-			resp, _ := testRequest(t, ts, tt.method, tt.request)
+			resp, _ := testRequest(t, ts, http.MethodPost, tt.request)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
 		})
 	}
