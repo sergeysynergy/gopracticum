@@ -4,14 +4,15 @@ import (
 	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sergeysynergy/gopracticum/internal/handlers"
+	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
 type Config struct {
