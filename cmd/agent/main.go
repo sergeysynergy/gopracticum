@@ -26,8 +26,8 @@ func main() {
 	port := os.Getenv("SERVER_PORT")
 
 	cfg := agent.Config{
-		PollInterval:   1 * time.Second, // in prod 2
-		ReportInterval: 2 * time.Second, // in prod 10
+		PollInterval:   2 * time.Second,  // in prod 2
+		ReportInterval: 10 * time.Second, // in prod 10
 		Port:           port,
 	}
 
