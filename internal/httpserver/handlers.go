@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/sergeysynergy/gopracticum/internal/storage"
@@ -85,10 +86,20 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	var b bytes.Buffer
 	b.WriteString("<h1>Current metrics data:</h1>")
 
+	type gauge struct {
+		key   string
+		value float64
+	}
+	gauges := make([]gauge, 0, len(h.Gauges))
+	for k, val := range h.Gauges {
+		gauges = append(gauges, gauge{key: string(k), value: float64(val)})
+	}
+	sort.Slice(gauges, func(i, j int) bool { return gauges[i].key < gauges[j].key })
+
 	b.WriteString(`<div><h2>Gauges</h2>`)
-	for k, gauge := range h.Gauges {
-		val := strconv.FormatFloat(float64(gauge), 'f', -1, 64)
-		b.WriteString(fmt.Sprintf("<div>%s - %v</div>", k, val))
+	for _, g := range gauges {
+		val := strconv.FormatFloat(g.value, 'f', -1, 64)
+		b.WriteString(fmt.Sprintf("<div>%s - %v</div>", g.key, val))
 	}
 	b.WriteString(`</div>`)
 
