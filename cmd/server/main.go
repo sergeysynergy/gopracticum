@@ -9,7 +9,7 @@ import (
 	"github.com/sergeysynergy/gopracticum/internal/httpserver"
 )
 
-func init() {
+func main() {
 	err := godotenv.Load("./config/.env")
 	if err != nil {
 		err = godotenv.Load("../../config/.env")
@@ -17,9 +17,7 @@ func init() {
 			log.Fatal("Error loading .env file")
 		}
 	}
-}
 
-func main() {
 	port := os.Getenv("SERVER_PORT")
 
 	cfg := httpserver.Config{
