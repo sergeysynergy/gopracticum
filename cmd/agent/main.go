@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/agent"
+	"github.com/sergeysynergy/gopracticum/internal/agent"
 )
 
-func init() {
+func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	err := godotenv.Load("./config/.env")
@@ -20,9 +20,7 @@ func init() {
 			log.Fatal("Error loading .env file")
 		}
 	}
-}
 
-func main() {
 	port := os.Getenv("SERVER_PORT")
 
 	cfg := agent.Config{
