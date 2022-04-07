@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/sergeysynergy/gopracticum/internal/handlers"
 	"log"
 	"os"
 	"time"
@@ -20,11 +21,12 @@ func main() {
 
 	port := os.Getenv("SERVER_PORT")
 
+	h := handlers.New()
 	cfg := httpserver.Config{
 		Port:         port,
 		GraceTimeout: 20 * time.Second,
 	}
-	s := httpserver.New(cfg)
+	s := httpserver.New(h.GetRouter(), cfg)
 
 	s.Serve()
 }

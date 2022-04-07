@@ -2,16 +2,12 @@ package httpserver
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
 type Config struct {
@@ -25,25 +21,7 @@ type Server struct {
 	Cfg Config
 }
 
-func New(cfg Config) *Server {
-	// определяем общее хранилище метрик
-	st := storage.New()
-
-	// задаём обработчики с доступом к общему хранилищу
-	handler := &Handler{Storage: st}
-
-	// созданим новый роутер
-	r := chi.NewRouter()
-
-	// зададим встроенные middleware, чтобы улучшить стабильность приложения
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	// определим маршруты
-	getRoutes(r, handler)
-
+func New(r http.Handler, cfg Config) *Server {
 	// объявим HTTP-сервер
 	addr := cfg.Address + ":" + cfg.Port
 	s := &Server{
@@ -59,19 +37,6 @@ func New(cfg Config) *Server {
 	}
 
 	return s
-}
-
-// объявим роуты, используя маршрутизатор chi
-func getRoutes(r chi.Router, handler *Handler) chi.Router {
-	r.Get("/", handler.List)
-
-	// шаблон роутов POST http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
-	r.Post("/update/{type}/{name}/{value}", handler.Post)
-
-	// шаблон роутов GET http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
-	r.Get("/value/{type}/{name}", handler.Get)
-
-	return r
 }
 
 func (s *Server) Serve() {

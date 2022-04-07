@@ -4,62 +4,114 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 type Storage struct {
-	*metrics.Metrics
+	gaugesMu sync.RWMutex
+	gauges   map[string]metrics.Gauge
+
+	countersMu sync.RWMutex
+	counters   map[string]metrics.Counter
 }
 
 func New() *Storage {
 	return &Storage{
-		Metrics: metrics.New(),
+		gauges:   make(map[string]metrics.Gauge, metrics.GaugeLen),
+		counters: make(map[string]metrics.Counter, metrics.CounterLen),
 	}
 }
 
-func (s *Storage) Put(key metrics.Name, val metrics.Gauge) {
-	s.Lock()
-	defer s.Unlock()
-
-	s.Gauges[key] = val
+func NewWithGauges(gauges map[string]metrics.Gauge) *Storage {
+	s := New()
+	s.gauges = gauges
+	return s
 }
 
-func (s *Storage) Count(key metrics.Name, val metrics.Counter) {
-	s.Lock()
-	defer s.Unlock()
+func NewWithCounters(counters map[string]metrics.Counter) *Storage {
+	s := New()
+	s.counters = counters
+	return s
+}
 
-	_, ok := s.Counters[key]
+func (s *Storage) PutGauge(key string, val metrics.Gauge) {
+	s.gaugesMu.Lock()
+	defer s.gaugesMu.Unlock()
+
+	s.gauges[key] = val
+}
+
+func (s *Storage) BulkPutGauge(gauges map[string]metrics.Gauge) {
+	s.gaugesMu.Lock()
+	defer s.gaugesMu.Unlock()
+
+	s.gauges = gauges
+}
+
+func (s *Storage) GetGauge(key string) (metrics.Gauge, error) {
+	s.gaugesMu.RLock()
+	defer s.gaugesMu.RUnlock()
+
+	gauge, ok := s.gauges[key]
 	if !ok {
-		s.Counters[key] = val
+		return 0, fmt.Errorf("gauge metric with key '%s' not found", key)
+	}
+
+	return gauge, nil
+}
+
+func (s *Storage) Gauges() map[string]metrics.Gauge {
+	s.gaugesMu.RLock()
+	defer s.gaugesMu.RUnlock()
+
+	return s.gauges
+}
+
+func (s *Storage) IncreaseCounter(key string) {
+	s.countersMu.Lock()
+	defer s.countersMu.Unlock()
+
+	_, ok := s.counters[key]
+	if !ok {
+		s.counters[key] = 1
 		return
 	}
 
-	s.Counters[key] += val
+	s.counters[key] += 1
 }
 
-func (s *Storage) GetGauge(key metrics.Name) (*metrics.Gauge, error) {
-	s.RLock()
-	defer s.RUnlock()
+func (s *Storage) PostCounter(key string, val metrics.Counter) {
+	s.countersMu.Lock()
+	defer s.countersMu.Unlock()
 
-	gauge, ok := s.Gauges[key]
+	_, ok := s.counters[key]
 	if !ok {
-		return nil, fmt.Errorf("gauge metric with key '%s' not found", key)
+		s.counters[key] = val
+		return
 	}
 
-	return &gauge, nil
+	s.counters[key] += val
 }
 
-func (s *Storage) GetCounter(key metrics.Name) (*metrics.Counter, error) {
-	s.RLock()
-	defer s.RUnlock()
+func (s *Storage) GetCounter(key string) (metrics.Counter, error) {
+	s.countersMu.RLock()
+	defer s.countersMu.RUnlock()
 
-	counter, ok := s.Counters[key]
+	counter, ok := s.counters[key]
 	if !ok {
-		return nil, fmt.Errorf("counter metric with key '%s' not found", key)
+		return 0, fmt.Errorf("counter metric with key '%s' not found", key)
 	}
 
-	return &counter, nil
+	return counter, nil
+}
+
+func (s *Storage) Counters() map[string]metrics.Counter {
+	s.countersMu.RLock()
+	defer s.countersMu.RUnlock()
+
+	return s.counters
 }
 
 // ToJSON Вывод содержимого хранилища в формате JSON для тестовых целей.
@@ -67,12 +119,12 @@ func (s *Storage) ToJSON() []byte {
 	var b bytes.Buffer
 
 	b.WriteString(`{"gauges":`)
-	g, _ := json.Marshal(s.Gauges)
+	g, _ := json.Marshal(s.gauges)
 	b.Write(g)
 	b.WriteString(`},`)
 
 	b.WriteString(`{"counters":`)
-	c, _ := json.Marshal(s.Counters)
+	c, _ := json.Marshal(s.counters)
 	b.Write(c)
 	b.WriteString(`}`)
 

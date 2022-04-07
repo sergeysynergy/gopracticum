@@ -3,8 +3,9 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -19,37 +20,29 @@ import (
 type Config struct {
 	PollInterval   time.Duration // частота обновления метрик из пакета `runtime`
 	ReportInterval time.Duration // частота отправки метрик на сервер
-	Address        string        // адрес сервера куда отправлять метрики
-	Port           string        // порт сервера
+	URL            string        // адрес:порт сервера куда отправлять метрики
 }
 
 type Agent struct {
-	*metrics.Metrics
-	Cfg    Config
-	client http.Client
+	Cfg         Config
+	basicClient http.Client
+	client      *resty.Client
+	storage     *storage.Storage
 }
 
 func New(cfg Config) (*Agent, error) {
-	if cfg.PollInterval == 0 {
-		return nil, fmt.Errorf("необходимо задать PollInterval")
-	}
-	if cfg.ReportInterval == 0 {
-		return nil, fmt.Errorf("необходимо задать ReportInterval")
-	}
-	if cfg.Port == "" {
-		return nil, fmt.Errorf("необходимо задать порт сервера")
-	}
-
 	a := &Agent{
-		Cfg:     cfg,
-		Metrics: metrics.New(),
-		client: http.Client{
+		Cfg: cfg,
+		basicClient: http.Client{
 			Timeout: 4 * time.Second,
 			Transport: &http.Transport{
 				MaxIdleConns: metrics.GaugeLen + metrics.CounterLen,
 			},
 		},
+		client:  resty.New(),
+		storage: storage.New(),
 	}
+	a.client.SetTimeout(4 * time.Second)
 
 	return a, nil
 }
@@ -103,58 +96,86 @@ func (a *Agent) reportHandler(ctx context.Context) {
 
 // Выполняем отправку запросов метрик на сервер.
 func (a *Agent) sendReport(ctx context.Context) {
-	a.RLock()
-	defer a.RUnlock()
+	for k, v := range a.storage.Gauges() {
+		gauge := float64(v)
+		m := &metrics.Metrics{
+			ID:    k,
+			MType: "gauge",
+			Value: &gauge,
+		}
+		err := a.sendJsonRequest(ctx, m)
+		if err != nil {
+			a.handleError(err)
+			return
+		}
 
-	wg := &sync.WaitGroup{}
-	for key, val := range a.Gauges {
-		wg.Add(1)
-		go a.sendRequest(ctx, wg, key, val)
 	}
-	for key, val := range a.Counters {
-		wg.Add(1)
-		go a.sendRequest(ctx, wg, key, val)
+	for k, v := range a.storage.Counters() {
+		counter := int64(v)
+		m := &metrics.Metrics{
+			ID:    k,
+			MType: "counter",
+			Delta: &counter,
+		}
+		err := a.sendJsonRequest(ctx, m)
+		if err != nil {
+			a.handleError(err)
+			return
+		}
 	}
-	wg.Wait()
 
 	log.Println("Выполнена отправка отчёта")
 }
 
-func (a *Agent) sendRequest(ctx context.Context, wg *sync.WaitGroup, key metrics.Name, value interface{}) {
+func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key string, value interface{}) {
 	defer wg.Done()
 
 	// http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
 	var endpoint string
 
-	addr := a.Cfg.Address + ":" + a.Cfg.Port
-
 	switch metric := value.(type) {
 	case metrics.Gauge:
-		endpoint = fmt.Sprintf("http://%s/update/%s/%s/%f", addr, "gauge", key, metric)
+		endpoint = fmt.Sprintf("%s/update/%s/%s/%f", a.Cfg.URL, "gauge", key, metric)
 	case metrics.Counter:
-		endpoint = fmt.Sprintf("http://%s/update/%s/%s/%d", addr, "counter", key, metric)
+		endpoint = fmt.Sprintf("%s/update/%s/%s/%d", a.Cfg.URL, "counter", key, metric)
 	default:
 		a.handleError(fmt.Errorf("неизвестный тип метрики"))
 		return
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
-	req.Header.Set("Content-Type", "text/plain")
+	resp, err := a.client.R().
+		SetContext(ctx).
+		Post(endpoint)
 
-	response, err := a.client.Do(req)
 	if err != nil {
 		a.handleError(err)
 		return
 	}
 
-	// Чтобы повторно использовать кешированное TCP-соединение, клиент должен обязательно прочитать тело ответа
-	// до конца и закрыть, даже если оно не нужно.
-	_, err = io.Copy(io.Discard, response.Body)
-	if err != nil {
-		a.handleError(err)
+	if resp.StatusCode() != http.StatusOK {
+		respErr := fmt.Errorf("%v", resp.StatusCode())
+		a.handleError(respErr)
 		return
 	}
-	defer response.Body.Close()
+}
+
+func (a *Agent) sendJsonRequest(ctx context.Context, m *metrics.Metrics) error {
+	endpoint := a.Cfg.URL + "/update/"
+
+	resp, err := a.client.R().
+		SetContext(ctx).
+		SetBody(m).
+		Post(endpoint)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("%v", resp.StatusCode())
+	}
+
+	return nil
 }
 
 func (a *Agent) handleError(err error) {
@@ -162,42 +183,43 @@ func (a *Agent) handleError(err error) {
 }
 
 func (a *Agent) Update() {
-	a.Lock()
-	defer a.Unlock()
-
 	ms := &runtime.MemStats{}
 	runtime.ReadMemStats(ms)
 
-	a.Gauges[metrics.Alloc] = metrics.Gauge(ms.Alloc)
-	a.Gauges[metrics.BuckHashSys] = metrics.Gauge(ms.BuckHashSys)
-	a.Gauges[metrics.Frees] = metrics.Gauge(ms.Frees)
-	a.Gauges[metrics.GCCPUFraction] = metrics.Gauge(ms.GCCPUFraction)
-	a.Gauges[metrics.GCSys] = metrics.Gauge(ms.GCSys)
-	a.Gauges[metrics.HeapAlloc] = metrics.Gauge(ms.HeapAlloc)
-	a.Gauges[metrics.HeapIdle] = metrics.Gauge(ms.HeapIdle)
-	a.Gauges[metrics.HeapInuse] = metrics.Gauge(ms.HeapInuse)
-	a.Gauges[metrics.HeapObjects] = metrics.Gauge(ms.HeapObjects)
-	a.Gauges[metrics.HeapReleased] = metrics.Gauge(ms.HeapReleased)
-	a.Gauges[metrics.HeapSys] = metrics.Gauge(ms.HeapSys)
-	a.Gauges[metrics.LastGC] = metrics.Gauge(ms.LastGC)
-	a.Gauges[metrics.Lookups] = metrics.Gauge(ms.Lookups)
-	a.Gauges[metrics.MCacheInuse] = metrics.Gauge(ms.MCacheInuse)
-	a.Gauges[metrics.MCacheSys] = metrics.Gauge(ms.MCacheSys)
-	a.Gauges[metrics.MSpanInuse] = metrics.Gauge(ms.MSpanInuse)
-	a.Gauges[metrics.MSpanSys] = metrics.Gauge(ms.MSpanSys)
-	a.Gauges[metrics.Mallocs] = metrics.Gauge(ms.Mallocs)
-	a.Gauges[metrics.NextGC] = metrics.Gauge(ms.NextGC)
-	a.Gauges[metrics.NumForcedGC] = metrics.Gauge(ms.NumForcedGC)
-	a.Gauges[metrics.NumGC] = metrics.Gauge(ms.NumGC)
-	a.Gauges[metrics.OtherSys] = metrics.Gauge(ms.OtherSys)
-	a.Gauges[metrics.PauseTotalNs] = metrics.Gauge(ms.PauseTotalNs)
-	a.Gauges[metrics.StackInuse] = metrics.Gauge(ms.StackInuse)
-	a.Gauges[metrics.StackSys] = metrics.Gauge(ms.StackSys)
-	a.Gauges[metrics.Sys] = metrics.Gauge(ms.Sys)
-	a.Gauges[metrics.TotalAlloc] = metrics.Gauge(ms.TotalAlloc)
-	a.Gauges[metrics.RandomValue] = metrics.Gauge(rand.Float64())
+	gauges := make(map[string]metrics.Gauge, metrics.GaugeLen)
 
-	a.Counters[metrics.PollCount] += 1
+	gauges[metrics.Alloc] = metrics.Gauge(ms.Alloc)
+	gauges[metrics.BuckHashSys] = metrics.Gauge(ms.BuckHashSys)
+	gauges[metrics.Frees] = metrics.Gauge(ms.Frees)
+	gauges[metrics.GCCPUFraction] = metrics.Gauge(ms.GCCPUFraction)
+	gauges[metrics.GCSys] = metrics.Gauge(ms.GCSys)
+	gauges[metrics.HeapAlloc] = metrics.Gauge(ms.HeapAlloc)
+	gauges[metrics.HeapIdle] = metrics.Gauge(ms.HeapIdle)
+	gauges[metrics.HeapInuse] = metrics.Gauge(ms.HeapInuse)
+	gauges[metrics.HeapObjects] = metrics.Gauge(ms.HeapObjects)
+	gauges[metrics.HeapReleased] = metrics.Gauge(ms.HeapReleased)
+	gauges[metrics.HeapSys] = metrics.Gauge(ms.HeapSys)
+	gauges[metrics.LastGC] = metrics.Gauge(ms.LastGC)
+	gauges[metrics.Lookups] = metrics.Gauge(ms.Lookups)
+	gauges[metrics.MCacheInuse] = metrics.Gauge(ms.MCacheInuse)
+	gauges[metrics.MCacheSys] = metrics.Gauge(ms.MCacheSys)
+	gauges[metrics.MSpanInuse] = metrics.Gauge(ms.MSpanInuse)
+	gauges[metrics.MSpanSys] = metrics.Gauge(ms.MSpanSys)
+	gauges[metrics.Mallocs] = metrics.Gauge(ms.Mallocs)
+	gauges[metrics.NextGC] = metrics.Gauge(ms.NextGC)
+	gauges[metrics.NumForcedGC] = metrics.Gauge(ms.NumForcedGC)
+	gauges[metrics.NumGC] = metrics.Gauge(ms.NumGC)
+	gauges[metrics.OtherSys] = metrics.Gauge(ms.OtherSys)
+	gauges[metrics.PauseTotalNs] = metrics.Gauge(ms.PauseTotalNs)
+	gauges[metrics.StackInuse] = metrics.Gauge(ms.StackInuse)
+	gauges[metrics.StackSys] = metrics.Gauge(ms.StackSys)
+	gauges[metrics.Sys] = metrics.Gauge(ms.Sys)
+	gauges[metrics.TotalAlloc] = metrics.Gauge(ms.TotalAlloc)
+	gauges[metrics.RandomValue] = metrics.Gauge(rand.Float64())
+
+	a.storage.BulkPutGauge(gauges)
+
+	a.storage.IncreaseCounter(metrics.PollCount)
 
 	log.Println("Выполнено обновление метрик")
 }

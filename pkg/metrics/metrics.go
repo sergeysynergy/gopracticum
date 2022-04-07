@@ -2,45 +2,42 @@ package metrics
 
 import (
 	"strconv"
-	"sync"
 )
 
 const (
 	GaugeLen   = 28
 	CounterLen = 1
 
-	Alloc         = Name("Alloc")
-	BuckHashSys   = Name("BuckHashSys")
-	Frees         = Name("Frees")
-	GCCPUFraction = Name("GCCPUFraction")
-	GCSys         = Name("GCSys")
-	HeapAlloc     = Name("HeapAlloc")
-	HeapIdle      = Name("HeapIdle")
-	HeapInuse     = Name("HeapInuse")
-	HeapObjects   = Name("HeapObjects")
-	HeapReleased  = Name("HeapReleased")
-	HeapSys       = Name("HeapSys")
-	LastGC        = Name("LastGC")
-	Lookups       = Name("Lookups")
-	MCacheInuse   = Name("MCacheInuse")
-	MCacheSys     = Name("MCacheSys")
-	MSpanInuse    = Name("MSpanInuse")
-	MSpanSys      = Name("MSpanSys")
-	Mallocs       = Name("Mallocs")
-	NextGC        = Name("NextGC")
-	NumForcedGC   = Name("NumForcedGC")
-	NumGC         = Name("NumGC")
-	OtherSys      = Name("OtherSys")
-	PauseTotalNs  = Name("PauseTotalNs")
-	StackInuse    = Name("StackInuse")
-	StackSys      = Name("StackSys")
-	Sys           = Name("Sys")
-	TotalAlloc    = Name("TotalAlloc")
-	RandomValue   = Name("RandomValue")
-	PollCount     = Name("PollCount")
+	Alloc         = "Alloc"
+	BuckHashSys   = "BuckHashSys"
+	Frees         = "Frees"
+	GCCPUFraction = "GCCPUFraction"
+	GCSys         = "GCSys"
+	HeapAlloc     = "HeapAlloc"
+	HeapIdle      = "HeapIdle"
+	HeapInuse     = "HeapInuse"
+	HeapObjects   = "HeapObjects"
+	HeapReleased  = "HeapReleased"
+	HeapSys       = "HeapSys"
+	LastGC        = "LastGC"
+	Lookups       = "Lookups"
+	MCacheInuse   = "MCacheInuse"
+	MCacheSys     = "MCacheSys"
+	MSpanInuse    = "MSpanInuse"
+	MSpanSys      = "MSpanSys"
+	Mallocs       = "Mallocs"
+	NextGC        = "NextGC"
+	NumForcedGC   = "NumForcedGC"
+	NumGC         = "NumGC"
+	OtherSys      = "OtherSys"
+	PauseTotalNs  = "PauseTotalNs"
+	StackInuse    = "StackInuse"
+	StackSys      = "StackSys"
+	Sys           = "Sys"
+	TotalAlloc    = "TotalAlloc"
+	RandomValue   = "RandomValue"
+	PollCount     = "PollCount"
 )
-
-type Name string
 
 type Gauge float64
 
@@ -71,14 +68,8 @@ func (c *Counter) FromString(str string) error {
 }
 
 type Metrics struct {
-	sync.RWMutex
-	Gauges   map[Name]Gauge
-	Counters map[Name]Counter
-}
-
-func New() *Metrics {
-	return &Metrics{
-		Gauges:   make(map[Name]Gauge, GaugeLen),
-		Counters: make(map[Name]Counter, CounterLen),
-	}
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }

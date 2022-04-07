@@ -24,15 +24,15 @@ func main() {
 	port := os.Getenv("SERVER_PORT")
 
 	cfg := agent.Config{
-		PollInterval:   2 * time.Second,  // in prod 2
-		ReportInterval: 10 * time.Second, // in prod 10
-		Port:           port,
+		PollInterval:   1 * time.Second, // in prod 2
+		ReportInterval: 2 * time.Second, // in prod 10
+		URL:            "http://:" + port,
 	}
 
-	agent, err := agent.New(cfg)
+	a, err := agent.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	agent.Run()
+	a.Run()
 }
