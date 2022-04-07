@@ -77,7 +77,7 @@ func TestAgentSendJsonRequest(t *testing.T) {
 			agent, err := New(cfg)
 			assert.NoError(t, err)
 
-			err = agent.sendJsonRequest(context.Background(), tt.metrics)
+			err = agent.sendJSONRequest(context.Background(), tt.metrics)
 			assert.NoError(t, err)
 
 			m := myMetrics{}

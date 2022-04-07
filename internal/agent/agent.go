@@ -103,7 +103,7 @@ func (a *Agent) sendReport(ctx context.Context) {
 			MType: "gauge",
 			Value: &gauge,
 		}
-		err := a.sendJsonRequest(ctx, m)
+		err := a.sendJSONRequest(ctx, m)
 		if err != nil {
 			a.handleError(err)
 			return
@@ -117,7 +117,7 @@ func (a *Agent) sendReport(ctx context.Context) {
 			MType: "counter",
 			Delta: &counter,
 		}
-		err := a.sendJsonRequest(ctx, m)
+		err := a.sendJSONRequest(ctx, m)
 		if err != nil {
 			a.handleError(err)
 			return
@@ -159,7 +159,7 @@ func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key st
 	}
 }
 
-func (a *Agent) sendJsonRequest(ctx context.Context, m *metrics.Metrics) error {
+func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) error {
 	endpoint := a.Cfg.URL + "/update/"
 
 	resp, err := a.client.R().
