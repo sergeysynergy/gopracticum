@@ -7,11 +7,11 @@ import (
 )
 
 func (h *Handler) errorJSON(w http.ResponseWriter, message string, statusCode int) {
-	type errorJson struct {
+	type errorJSON struct {
 		Error      string
 		StatusCode int
 	}
-	e := errorJson{
+	e := errorJSON{
 		Error:      message,
 		StatusCode: statusCode,
 	}
