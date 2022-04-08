@@ -18,7 +18,9 @@ type Handler struct {
 	storage Storer
 }
 
-func New() *Handler {
+type HandlerOptions func(handler *Handler)
+
+func New(opts ...HandlerOptions) *Handler {
 	h := &Handler{
 		// созданим новый роутер
 		router: chi.NewRouter(),
@@ -35,12 +37,19 @@ func New() *Handler {
 	// определим маршруты
 	h.setRoutes()
 
+	// Применяем в цикле каждую опцию
+	for _, opt := range opts {
+		// *Handler как аргумент
+		opt(h)
+	}
+
+	// вернуть измененный экземпляр Handler
 	return h
 }
 
-func NewWithStorage(st *storage.Storage) *Handler {
-	return &Handler{
-		storage: Storer(st),
+func WithStorage(st *storage.Storage) HandlerOptions {
+	return func(handler *Handler) {
+		handler.storage = Storer(st)
 	}
 }
 

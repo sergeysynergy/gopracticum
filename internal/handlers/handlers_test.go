@@ -89,11 +89,11 @@ func TestGet(t *testing.T) {
 	}{
 		{
 			name: "Gauge ok",
-			handler: NewWithStorage(storage.NewWithGauges(
+			handler: New(WithStorage(storage.NewWithGauges(
 				map[string]metrics.Gauge{
 					"Alloc": 1221.23,
 				},
-			)),
+			))),
 			request: "/value/gauge/Alloc",
 			want: want{
 				statusCode: http.StatusOK,
@@ -111,11 +111,11 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name: "Counter ok",
-			handler: NewWithStorage(storage.NewWithCounters(
+			handler: New(WithStorage(storage.NewWithCounters(
 				map[string]metrics.Counter{
 					"PollCount": 42,
 				},
-			)),
+			))),
 			request: "/value/counter/PollCount",
 			want: want{
 				statusCode: http.StatusOK,
@@ -252,7 +252,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-func TestUpdateValueHardBody(t *testing.T) {
+func TestUpdateHardBody(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
@@ -260,13 +260,11 @@ func TestUpdateValueHardBody(t *testing.T) {
 		name        string
 		contentType string
 		body        []byte
-		url         string
 		want        want
 	}{
 		{
 			name: "Update unsupported media type",
 			body: []byte(""),
-			url:  "/update/",
 			want: want{
 				statusCode: http.StatusUnsupportedMediaType,
 			},
@@ -274,24 +272,6 @@ func TestUpdateValueHardBody(t *testing.T) {
 		{
 			name:        "Update not acceptable",
 			body:        []byte("Not acceptable"),
-			url:         "/update/",
-			contentType: "application/json",
-			want: want{
-				statusCode: http.StatusNotAcceptable,
-			},
-		},
-		{
-			name: "Value unsupported media type",
-			body: []byte(""),
-			url:  "/value/",
-			want: want{
-				statusCode: http.StatusUnsupportedMediaType,
-			},
-		},
-		{
-			name:        "Value not acceptable",
-			body:        []byte("Not acceptable"),
-			url:         "/value/",
 			contentType: "application/json",
 			want: want{
 				statusCode: http.StatusNotAcceptable,
@@ -303,7 +283,6 @@ func TestUpdateValueHardBody(t *testing.T) {
 			handler := New()
 			r := chi.NewRouter()
 			r.Post("/update/", handler.Update)
-			r.Post("/value/", handler.Value)
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
@@ -312,12 +291,46 @@ func TestUpdateValueHardBody(t *testing.T) {
 				EnableTrace().
 				SetHeader("Content-type", tt.contentType).
 				SetBody(tt.body).
-				Post(ts.URL + tt.url)
+				Post(ts.URL + "/update/")
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
+			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 		})
 	}
+}
+
+func TestValueContentType(t *testing.T) {
+	h := New()
+	ts := httptest.NewServer(h.router)
+	defer ts.Close()
+
+	client := resty.New()
+	resp, err := client.R().
+		SetHeader("Accept", "application/json").
+		SetHeader("Content-Type", "bad type").
+		Post(ts.URL + "/value/")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode())
+	assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+}
+
+func TestValueUnmarshalError(t *testing.T) {
+	h := New()
+	ts := httptest.NewServer(h.router)
+	defer ts.Close()
+
+	client := resty.New()
+	resp, err := client.R().
+		SetHeader("Accept", "application/json").
+		SetHeader("Content-Type", "application/json").
+		SetBody("{bad bad json").
+		Post(ts.URL + "/value/")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotAcceptable, resp.StatusCode())
+	assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 }
 
 func TestValue(t *testing.T) {
@@ -338,8 +351,17 @@ func TestValue(t *testing.T) {
 		want    want
 	}{
 		{
-			name: "Not implemented",
-			body: metrics.Metrics{MType: "unknown"},
+			name:    "Metric type needed",
+			handler: New(),
+			body:    metrics.Metrics{MType: ""},
+			want: want{
+				statusCode: http.StatusBadRequest,
+			},
+		},
+		{
+			name:    "Not implemented",
+			handler: New(),
+			body:    metrics.Metrics{MType: "unknown"},
 			want: want{
 				statusCode: http.StatusNotImplemented,
 			},
@@ -356,12 +378,23 @@ func TestValue(t *testing.T) {
 			},
 		},
 		{
+			name:    "Counter not found",
+			handler: New(),
+			body: metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+			},
+			want: want{
+				statusCode: http.StatusNotFound,
+			},
+		},
+		{
 			name: "Gauge ok",
-			handler: NewWithStorage(storage.NewWithGauges(
+			handler: New(WithStorage(storage.NewWithGauges(
 				map[string]metrics.Gauge{
 					"Alloc": 1221.23,
 				},
-			)),
+			))),
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -375,17 +408,36 @@ func TestValue(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Counter ok",
+			handler: New(WithStorage(storage.NewWithCounters(
+				map[string]metrics.Counter{
+					"PollCount": 42,
+				},
+			))),
+			body: metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+			},
+			want: want{
+				statusCode: http.StatusOK,
+				body: myMetrics{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: 42,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := chi.NewRouter()
-			r.Post("/value/", tt.handler.Value)
-			ts := httptest.NewServer(r)
+			ts := httptest.NewServer(tt.handler.router)
 			defer ts.Close()
 
 			m := myMetrics{}
 			client := resty.New()
 			resp, err := client.R().
+				SetHeader("Accept", "application/json").
 				SetHeader("Content-Type", "application/json").
 				SetBody(tt.body).
 				SetResult(&m).
@@ -393,6 +445,7 @@ func TestValue(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
+			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 			assert.EqualValues(t, tt.want.body, m)
 		})
 	}
