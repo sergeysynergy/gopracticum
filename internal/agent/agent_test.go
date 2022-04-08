@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/sergeysynergy/gopracticum/internal/handlers"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
@@ -65,10 +64,7 @@ func TestAgentSendJsonRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := handlers.New()
-			r := chi.NewRouter()
-			r.Post("/update/", handler.Update)
-			r.Post("/value/", handler.Value)
-			ts := httptest.NewServer(r)
+			ts := httptest.NewServer(handler.GetRouter())
 			defer ts.Close()
 
 			cfg := Config{
@@ -84,6 +80,7 @@ func TestAgentSendJsonRequest(t *testing.T) {
 			client := resty.New()
 			fmt.Println(ts.URL)
 			resp, err := client.R().
+				SetHeader("Accept", "application/json").
 				SetHeader("Content-Type", "application/json").
 				SetBody(tt.metrics).
 				SetResult(&m).
@@ -91,6 +88,7 @@ func TestAgentSendJsonRequest(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
+			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 			assert.EqualValues(t, tt.want.metrics, m)
 		})
 	}
