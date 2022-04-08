@@ -87,6 +87,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	ct := r.Header.Get("Content-Type")
 	if ct != "application/json" {
 		msg := "wrong content type, 'application/json' needed"
