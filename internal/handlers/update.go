@@ -11,13 +11,13 @@ import (
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
 	if ct != "application/json" {
-		h.errorJsonUnsupportedMediaType(w)
+		h.errorJSONUnsupportedMediaType(w)
 		return
 	}
 
 	respBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		h.errorJsonReadBodyFailed(w, err)
+		h.errorJSONReadBodyFailed(w, err)
 		return
 	}
 	defer r.Body.Close()
@@ -25,7 +25,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	m := metrics.Metrics{}
 	err = json.Unmarshal(respBody, &m)
 	if err != nil {
-		h.errorJsonUnmarshalFailed(w, err)
+		h.errorJSONUnmarshalFailed(w, err)
 		return
 	}
 

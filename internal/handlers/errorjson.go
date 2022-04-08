@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (h *Handler) errorJson(w http.ResponseWriter, message string, statusCode int) {
+func (h *Handler) errorJSON(w http.ResponseWriter, message string, statusCode int) {
 	type errorJson struct {
 		Error      string
 		StatusCode int
@@ -28,18 +28,18 @@ func (h *Handler) errorJson(w http.ResponseWriter, message string, statusCode in
 	w.Write(b)
 }
 
-func (h *Handler) errorJsonUnsupportedMediaType(w http.ResponseWriter) {
-	h.errorJson(w, "Wrong content type - application/json needed", http.StatusUnsupportedMediaType)
+func (h *Handler) errorJSONUnsupportedMediaType(w http.ResponseWriter) {
+	h.errorJSON(w, "Wrong content type - application/json needed", http.StatusUnsupportedMediaType)
 }
 
-func (h *Handler) errorJsonReadBodyFailed(w http.ResponseWriter, err error) {
-	h.errorJson(w, "Failed to read request body - "+err.Error(), http.StatusInternalServerError)
+func (h *Handler) errorJSONReadBodyFailed(w http.ResponseWriter, err error) {
+	h.errorJSON(w, "Failed to read request body - "+err.Error(), http.StatusInternalServerError)
 }
 
-func (h *Handler) errorJsonUnmarshalFailed(w http.ResponseWriter, err error) {
-	h.errorJson(w, "Unmarshal JSON failed - "+err.Error(), http.StatusNotAcceptable)
+func (h *Handler) errorJSONUnmarshalFailed(w http.ResponseWriter, err error) {
+	h.errorJSON(w, "Unmarshal JSON failed - "+err.Error(), http.StatusNotAcceptable)
 }
 
-func (h *Handler) errorJsonMarshalFailed(w http.ResponseWriter, err error) {
-	h.errorJson(w, "Marshal JSON failed - "+err.Error(), http.StatusInternalServerError)
+func (h *Handler) errorJSONMarshalFailed(w http.ResponseWriter, err error) {
+	h.errorJSON(w, "Marshal JSON failed - "+err.Error(), http.StatusInternalServerError)
 }
