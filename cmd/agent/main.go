@@ -1,38 +1,31 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
-	"log"
-	"math/rand"
-	"os"
-	"time"
-
+	"github.com/caarlos0/env/v6"
 	"github.com/sergeysynergy/gopracticum/internal/agent"
+	"log"
+	"time"
 )
 
+type Config struct {
+	Addr           string        `env:"ADDRESS"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+}
+
 func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
+	var cfg Config
 
-	err := godotenv.Load("./config/.env")
+	err := env.Parse(&cfg)
 	if err != nil {
-		err = godotenv.Load("../../config/.env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+		log.Fatalln(err)
 	}
 
-	port := os.Getenv("SERVER_PORT")
-
-	cfg := agent.Config{
-		PollInterval:   1 * time.Second, // in prod 2
-		ReportInterval: 2 * time.Second, // in prod 10
-		URL:            "http://:" + port,
-	}
-
-	a, err := agent.New(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+	a := agent.New(
+		agent.WithAddress(cfg.Addr),
+		agent.WithPollInterval(cfg.PollInterval),
+		agent.WithReportInterval(cfg.ReportInterval),
+	)
 
 	a.Run()
 }

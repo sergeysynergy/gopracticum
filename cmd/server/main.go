@@ -1,32 +1,27 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
+	"github.com/caarlos0/env/v6"
 	"log"
-	"os"
-	"time"
 
+	"github.com/sergeysynergy/gopracticum/internal/handlers"
 	"github.com/sergeysynergy/gopracticum/internal/httpserver"
 )
 
-func main() {
-	err := godotenv.Load("./config/.env")
-	if err != nil {
-		err = godotenv.Load("../../config/.env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
+type Config struct {
+	Addr string `env:"ADDRESS"`
+}
 
-	port := os.Getenv("SERVER_PORT")
+func main() {
+	var cfg Config
+
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	h := handlers.New()
-	cfg := httpserver.Config{
-		Port:         port,
-		GraceTimeout: 20 * time.Second,
-	}
-	s := httpserver.New(h.GetRouter(), cfg)
+	s := httpserver.New(h.GetRouter(), httpserver.WithAddress(cfg.Addr))
 
 	s.Serve()
 }

@@ -67,14 +67,12 @@ func TestAgentSendJsonRequest(t *testing.T) {
 			ts := httptest.NewServer(handler.GetRouter())
 			defer ts.Close()
 
-			cfg := Config{
-				URL: ts.URL,
-			}
-			agent, err := New(cfg)
+			agent := New(WithAddress(ts.URL[7:]))
+
+			err := agent.sendJSONRequest(context.Background(), tt.metrics)
 			assert.NoError(t, err)
 
-			err = agent.sendJSONRequest(context.Background(), tt.metrics)
-			assert.NoError(t, err)
+			fmt.Println("::", ts.URL+"/value/")
 
 			m := myMetrics{}
 			client := resty.New()

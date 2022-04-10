@@ -17,34 +17,70 @@ import (
 	"time"
 )
 
-type Config struct {
-	PollInterval   time.Duration // частота обновления метрик из пакета `runtime`
-	ReportInterval time.Duration // частота отправки метрик на сервер
-	URL            string        // адрес:порт сервера куда отправлять метрики
-}
-
 type Agent struct {
-	Cfg         Config
-	basicClient http.Client
-	client      *resty.Client
-	storage     *storage.Storage
+	client         *resty.Client
+	storage        *storage.Storage
+	pollInterval   time.Duration
+	reportInterval time.Duration
+	protocol       string
+	addr           string
 }
 
-func New(cfg Config) (*Agent, error) {
-	a := &Agent{
-		Cfg: cfg,
-		basicClient: http.Client{
-			Timeout: 4 * time.Second,
-			Transport: &http.Transport{
-				MaxIdleConns: metrics.GaugeLen + metrics.CounterLen,
-			},
-		},
-		client:  resty.New(),
-		storage: storage.New(),
-	}
-	a.client.SetTimeout(4 * time.Second)
+type AgtOption func(agent *Agent)
 
-	return a, nil
+func New(opts ...AgtOption) *Agent {
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	const (
+		defaultPollInterval   = 2 * time.Second  // частота обновления метрик из пакета `runtime`
+		defaultReportInterval = 10 * time.Second // частота отправки метрик на сервер
+		defaultAddress        = "127.0.0.1:8080"
+		defaultProtocol       = "http://"
+		defaultTimeout        = 4 * time.Second
+	)
+
+	a := &Agent{
+		client:         resty.New(),
+		storage:        storage.New(),
+		pollInterval:   defaultPollInterval,
+		reportInterval: defaultReportInterval,
+		protocol:       defaultProtocol,
+		addr:           defaultAddress,
+	}
+	a.client.SetTimeout(defaultTimeout)
+
+	// Применяем в цикле каждую опцию
+	for _, opt := range opts {
+		// вызываем функцию, предоставляющую экземпляр *Agent в качестве аргумента
+		opt(a)
+	}
+
+	// вернуть измененный экземпляр Server
+	return a
+}
+
+func WithAddress(addr string) AgtOption {
+	return func(a *Agent) {
+		if addr != "" {
+			a.addr = addr
+		}
+	}
+}
+
+func WithPollInterval(duration time.Duration) AgtOption {
+	return func(a *Agent) {
+		if duration > 0 {
+			a.pollInterval = duration
+		}
+	}
+}
+
+func WithReportInterval(duration time.Duration) AgtOption {
+	return func(a *Agent) {
+		if duration > 0 {
+			a.reportInterval = duration
+		}
+	}
 }
 
 func (a *Agent) Run() {
@@ -66,7 +102,7 @@ func (a *Agent) Run() {
 
 // Выполняем регулярное обновление метрик пока не пришёл сигнал отмены.
 func (a *Agent) pollHandler(ctx context.Context) {
-	ticker := time.NewTicker(a.Cfg.PollInterval)
+	ticker := time.NewTicker(a.pollInterval)
 	for {
 		select {
 		case <-ticker.C:
@@ -81,7 +117,7 @@ func (a *Agent) pollHandler(ctx context.Context) {
 
 // Выполняем регулярную отправку метрик на сервер пока не пришёл сигнал отмены.
 func (a *Agent) reportHandler(ctx context.Context) {
-	ticker := time.NewTicker(a.Cfg.ReportInterval)
+	ticker := time.NewTicker(a.reportInterval)
 	for {
 		select {
 		case <-ticker.C:
@@ -135,9 +171,9 @@ func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key st
 
 	switch metric := value.(type) {
 	case metrics.Gauge:
-		endpoint = fmt.Sprintf("%s/update/%s/%s/%f", a.Cfg.URL, "gauge", key, metric)
+		endpoint = fmt.Sprintf("%s%s/update/%s/%s/%f", a.protocol, a.addr, "gauge", key, metric)
 	case metrics.Counter:
-		endpoint = fmt.Sprintf("%s/update/%s/%s/%d", a.Cfg.URL, "counter", key, metric)
+		endpoint = fmt.Sprintf("%s%s/update/%s/%s/%d", a.protocol, a.addr, "counter", key, metric)
 	default:
 		a.handleError(fmt.Errorf("неизвестный тип метрики"))
 		return
@@ -160,7 +196,7 @@ func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key st
 }
 
 func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) error {
-	endpoint := a.Cfg.URL + "/update/"
+	endpoint := a.protocol + a.addr + "/update/"
 
 	resp, err := a.client.R().
 		SetContext(ctx).

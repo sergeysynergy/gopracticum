@@ -10,33 +10,46 @@ import (
 	"time"
 )
 
-type Config struct {
-	Address      string
-	Port         string
-	GraceTimeout time.Duration // время на штатное завершения работы сервера
-}
-
 type Server struct {
-	*http.Server
-	Cfg Config
+	server       *http.Server
+	graceTimeout time.Duration // время на штатное завершения работы сервера
 }
 
-func New(r http.Handler, cfg Config) *Server {
-	// объявим HTTP-сервер
-	addr := cfg.Address + ":" + cfg.Port
+type ServerOption func(server *Server)
+
+func New(handler http.Handler, opts ...ServerOption) *Server {
+	const (
+		defaultAddress      = "127.0.0.1:8080"
+		defaultGraceTimeout = 20 * time.Second
+	)
 	s := &Server{
-		Cfg: cfg,
-		Server: &http.Server{
-			Addr:           addr,
+		server: &http.Server{
+			Addr:           defaultAddress,
 			ReadTimeout:    time.Second * 10,
 			WriteTimeout:   time.Second * 10,
 			IdleTimeout:    time.Second * 10, // максимальное время ожидания следующего запроса
 			MaxHeaderBytes: 1 << 20,          // 2^20 = 128 Kb
-			Handler:        r,
+			Handler:        handler,
 		},
+		graceTimeout: defaultGraceTimeout,
 	}
 
+	// Применяем в цикле каждую опцию
+	for _, opt := range opts {
+		// вызываем функцию, предоставляющую экземпляр *Server в качестве аргумента
+		opt(s)
+	}
+
+	// вернуть измененный экземпляр Server
 	return s
+}
+
+func WithAddress(addr string) ServerOption {
+	return func(s *Server) {
+		if addr != "" {
+			s.server.Addr = addr
+		}
+	}
 }
 
 func (s *Server) Serve() {
@@ -50,7 +63,7 @@ func (s *Server) Serve() {
 		<-sig
 
 		// определяем время для штатного завершения работы сервера
-		shutdownCtx, cancel := context.WithTimeout(serverCtx, s.Cfg.GraceTimeout)
+		shutdownCtx, cancel := context.WithTimeout(serverCtx, s.graceTimeout)
 		defer cancel()
 
 		go func() {
@@ -66,7 +79,7 @@ func (s *Server) Serve() {
 		// - затем закрытия всех незанятых подключений;
 		// - а затем бесконечного ожидания возврата подключений в режим ожидания;
 		// - наконец, завершения работы.
-		err := s.Shutdown(shutdownCtx)
+		err := s.server.Shutdown(shutdownCtx)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -74,9 +87,8 @@ func (s *Server) Serve() {
 	}()
 
 	// запустим сервер
-	addr := s.Cfg.Address + ":" + s.Cfg.Port
-	log.Printf("starting HTTP-server at %s\n", addr)
-	err := s.ListenAndServe()
+	log.Printf("starting HTTP-server at %s\n", s.server.Addr)
+	err := s.server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
