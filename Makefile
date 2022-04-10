@@ -1,6 +1,6 @@
 .PHONY: test
 
 test:
-	go test -v ./pkg/metrics/*
-	go test -v ./internal/handlers/*
-	go test -v ./internal/agent/*
+	go test ./pkg/metrics/*
+	go test ./internal/handlers/*
+	go test ./internal/agent/*
