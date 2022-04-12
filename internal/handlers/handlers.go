@@ -15,7 +15,7 @@ import (
 
 type Handler struct {
 	router  chi.Router
-	storage Storer
+	storage storage.Storer
 }
 
 type HandlerOptions func(handler *Handler)
@@ -25,7 +25,7 @@ func New(opts ...HandlerOptions) *Handler {
 		// созданим новый роутер
 		router: chi.NewRouter(),
 		// определяем хранилище метрик, реализующее интерфейс Storer
-		storage: Storer(storage.New()),
+		storage: storage.New(),
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
@@ -47,9 +47,9 @@ func New(opts ...HandlerOptions) *Handler {
 	return h
 }
 
-func WithStorage(st *storage.Storage) HandlerOptions {
+func WithStorage(st storage.Storer) HandlerOptions {
 	return func(handler *Handler) {
-		handler.storage = Storer(st)
+		handler.storage = st
 	}
 }
 
@@ -132,8 +132,8 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 		value float64
 	}
 	gauges := make([]gauge, 0, metrics.GaugeLen)
-	for k, val := range h.storage.Gauges() {
-		gauges = append(gauges, gauge{key: string(k), value: float64(val)})
+	for k, val := range h.storage.GetGauges() {
+		gauges = append(gauges, gauge{key: k, value: float64(val)})
 	}
 	sort.Slice(gauges, func(i, j int) bool { return gauges[i].key < gauges[j].key })
 
@@ -145,7 +145,7 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	b.WriteString(`</div>`)
 
 	b.WriteString(`<div><h2>Counters</h2>`)
-	for k, val := range h.storage.Counters() {
+	for k, val := range h.storage.GetCounters() {
 		b.WriteString(fmt.Sprintf("<div>%s - %d</div>", k, val))
 	}
 	b.WriteString(`</div>`)

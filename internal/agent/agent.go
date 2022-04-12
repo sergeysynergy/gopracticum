@@ -19,7 +19,7 @@ import (
 
 type Agent struct {
 	client         *resty.Client
-	storage        *storage.Storage
+	storage        storage.Storer
 	pollInterval   time.Duration
 	reportInterval time.Duration
 	protocol       string
@@ -132,7 +132,7 @@ func (a *Agent) reportHandler(ctx context.Context) {
 
 // Выполняем отправку запросов метрик на сервер.
 func (a *Agent) sendReport(ctx context.Context) {
-	for k, v := range a.storage.Gauges() {
+	for k, v := range a.storage.GetGauges() {
 		gauge := float64(v)
 		m := &metrics.Metrics{
 			ID:    k,
@@ -146,7 +146,7 @@ func (a *Agent) sendReport(ctx context.Context) {
 		}
 
 	}
-	for k, v := range a.storage.Counters() {
+	for k, v := range a.storage.GetCounters() {
 		counter := int64(v)
 		m := &metrics.Metrics{
 			ID:    k,
@@ -253,7 +253,7 @@ func (a *Agent) Update() {
 	gauges[metrics.TotalAlloc] = metrics.Gauge(ms.TotalAlloc)
 	gauges[metrics.RandomValue] = metrics.Gauge(rand.Float64())
 
-	a.storage.BulkPutGauge(gauges)
+	a.storage.BulkPutGauges(gauges)
 
 	a.storage.IncreaseCounter(metrics.PollCount)
 

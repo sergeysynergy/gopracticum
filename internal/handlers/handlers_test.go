@@ -88,12 +88,8 @@ func TestGet(t *testing.T) {
 		want
 	}{
 		{
-			name: "Gauge ok",
-			handler: New(WithStorage(storage.NewWithGauges(
-				map[string]metrics.Gauge{
-					"Alloc": 1221.23,
-				},
-			))),
+			name:    "Gauge ok",
+			handler: New(WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})))),
 			request: "/value/gauge/Alloc",
 			want: want{
 				statusCode: http.StatusOK,
@@ -110,12 +106,8 @@ func TestGet(t *testing.T) {
 			},
 		},
 		{
-			name: "Counter ok",
-			handler: New(WithStorage(storage.NewWithCounters(
-				map[string]metrics.Counter{
-					"PollCount": 42,
-				},
-			))),
+			name:    "Counter ok",
+			handler: New(WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})))),
 			request: "/value/counter/PollCount",
 			want: want{
 				statusCode: http.StatusOK,
@@ -389,12 +381,8 @@ func TestValue(t *testing.T) {
 			},
 		},
 		{
-			name: "Gauge ok",
-			handler: New(WithStorage(storage.NewWithGauges(
-				map[string]metrics.Gauge{
-					"Alloc": 1221.23,
-				},
-			))),
+			name:    "Gauge ok",
+			handler: New(WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})))),
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -409,12 +397,8 @@ func TestValue(t *testing.T) {
 			},
 		},
 		{
-			name: "Counter ok",
-			handler: New(WithStorage(storage.NewWithCounters(
-				map[string]metrics.Counter{
-					"PollCount": 42,
-				},
-			))),
+			name:    "Counter ok",
+			handler: New(WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})))),
 			body: metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
