@@ -142,7 +142,6 @@ func (fs *FileStore) Shutdown() error {
 	err = fs.file.Close()
 	if err != nil {
 		return err
-		log.Println("[ERROR] FileStore.Stop() -", err)
 	}
 
 	return nil
