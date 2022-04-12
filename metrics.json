@@ -1,2 +1,0 @@
-{"Gauges":{},"Counters":{}}
-uckHashSys":3970,"Frees":126,"GCCPUFraction":0,"GCSys":3894296,"HeapAlloc":681016,"HeapIdle":2457600,"HeapInuse":1277952,"HeapObjects":3233,"HeapReleased":2457600,"HeapSys":3735552,"LastGC":0,"Lookups":0,"MCacheInuse":14400,"MCacheSys":16384,"MSpanInuse":46240,"MSpanSys":49152,"Mallocs":3359,"NextGC":4473924,"NumForcedGC":0,"NumGC":0,"OtherSys":839798,"PauseTotalNs":0,"RandomValue":0.4955320597564381,"StackInuse":458752,"StackSys":458752,"Sys":8997904,"TotalAlloc":681016},"Counters":{"PollCount":12}}
