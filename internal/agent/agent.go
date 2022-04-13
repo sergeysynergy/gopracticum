@@ -26,14 +26,14 @@ type Agent struct {
 	addr           string
 }
 
-type AgtOption func(agent *Agent)
+type Option func(agent *Agent)
 
-func New(opts ...AgtOption) *Agent {
+func New(opts ...Option) *Agent {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	const (
-		defaultPollInterval   = 2 * time.Second  // частота обновления метрик из пакета `runtime`
 		defaultReportInterval = 10 * time.Second // частота отправки метрик на сервер
+		defaultPollInterval   = 2 * time.Second  // частота обновления метрик из пакета `runtime`
 		defaultAddress        = "127.0.0.1:8080"
 		defaultProtocol       = "http://"
 		defaultTimeout        = 4 * time.Second
@@ -59,7 +59,7 @@ func New(opts ...AgtOption) *Agent {
 	return a
 }
 
-func WithAddress(addr string) AgtOption {
+func WithAddress(addr string) Option {
 	return func(a *Agent) {
 		if addr != "" {
 			a.addr = addr
@@ -67,7 +67,7 @@ func WithAddress(addr string) AgtOption {
 	}
 }
 
-func WithPollInterval(duration time.Duration) AgtOption {
+func WithPollInterval(duration time.Duration) Option {
 	return func(a *Agent) {
 		if duration > 0 {
 			a.pollInterval = duration
@@ -75,7 +75,7 @@ func WithPollInterval(duration time.Duration) AgtOption {
 	}
 }
 
-func WithReportInterval(duration time.Duration) AgtOption {
+func WithReportInterval(duration time.Duration) Option {
 	return func(a *Agent) {
 		if duration > 0 {
 			a.reportInterval = duration

@@ -54,7 +54,7 @@ func New(st storage.Storer, opts ...Option) *FileStore {
 	// восстановим из файла в хранилище значения метрик, если restore = true
 	err := fs.restoreMetrics()
 	if err != nil {
-		log.Println("[ERROR] Failed to restore metrics from file - ", err)
+		log.Printf("[ERROR] Failed to restore metrics from file '%s' - %s\n", fs.storeFile, err)
 	}
 
 	// если специально (через WithStoreFile) задано пустое имя файла, возвращаем nil вместо объекта
@@ -93,6 +93,10 @@ func WithStoreInterval(interval time.Duration) Option {
 }
 
 func (fs *FileStore) restoreMetrics() error {
+	if !fs.restore {
+		return nil
+	}
+
 	data, err := ioutil.ReadFile(fs.storeFile)
 	if err != nil {
 		return err
