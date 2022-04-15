@@ -132,7 +132,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("content-type", "text/HTML")
+	w.Header().Set("content-type", "html/text")
 	w.WriteHeader(http.StatusOK)
 
 	var b bytes.Buffer
