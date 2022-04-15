@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -9,6 +12,78 @@ import (
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
+
+func TestUpdateHardBody(t *testing.T) {
+	type want struct {
+		statusCode int
+	}
+	tests := []struct {
+		name        string
+		contentType string
+		body        []byte
+		want        want
+	}{
+		{
+			name: "Update unsupported media type",
+			body: []byte(""),
+			want: want{
+				statusCode: http.StatusUnsupportedMediaType,
+			},
+		},
+		{
+			name:        "Update not acceptable",
+			body:        []byte("Not acceptable"),
+			contentType: "application/json",
+			want: want{
+				statusCode: http.StatusNotAcceptable,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := New()
+			ts := httptest.NewServer(handler.router)
+			defer ts.Close()
+
+			client := resty.New()
+			resp, err := client.R().
+				EnableTrace().
+				SetHeader("Content-type", tt.contentType).
+				SetBody(tt.body).
+				Post(ts.URL + "/update/")
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
+			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+		})
+	}
+}
+
+func compressMetrics(t *testing.T, m metrics.Metrics) []byte {
+	data, _ := json.Marshal(m)
+
+	var b bytes.Buffer
+	w, err := gzip.NewWriterLevel(&b, gzip.BestSpeed)
+	if err != nil {
+		t.Errorf("failed init compress writer: %v", err)
+		return nil
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		t.Errorf("failed write data to compress temporary buffer: %v", err)
+		return nil
+	}
+	// обязательно нужно вызвать метод Close() — в противном случае часть данных
+	// может не записаться в буфер b; если нужно выгрузить все упакованные данные
+	// в какой-то момент сжатия, используйте метод Flush()
+	err = w.Close()
+	if err != nil {
+		t.Errorf("failed compress data: %v", err)
+		return nil
+	}
+	// переменная b содержит сжатые данные
+	return b.Bytes()
+}
 
 func TestUpdate(t *testing.T) {
 	type want struct {
@@ -59,57 +134,12 @@ func TestUpdate(t *testing.T) {
 			resp, err := client.R().
 				EnableTrace().
 				SetHeader("Content-Type", "application/json").
-				SetBody(tt.body).
+				SetHeader("Content-Encoding", "gzip").
+				SetBody(compressMetrics(t, tt.body)).
 				Post(ts.URL + "/update/")
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
-		})
-	}
-}
-
-func TestUpdateHardBody(t *testing.T) {
-	type want struct {
-		statusCode int
-	}
-	tests := []struct {
-		name        string
-		contentType string
-		body        []byte
-		want        want
-	}{
-		{
-			name: "Update unsupported media type",
-			body: []byte(""),
-			want: want{
-				statusCode: http.StatusUnsupportedMediaType,
-			},
-		},
-		{
-			name:        "Update not acceptable",
-			body:        []byte("Not acceptable"),
-			contentType: "application/json",
-			want: want{
-				statusCode: http.StatusNotAcceptable,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			handler := New()
-			ts := httptest.NewServer(handler.router)
-			defer ts.Close()
-
-			client := resty.New()
-			resp, err := client.R().
-				EnableTrace().
-				SetHeader("Content-type", tt.contentType).
-				SetBody(tt.body).
-				Post(ts.URL + "/update/")
-
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
-			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 		})
 	}
 }

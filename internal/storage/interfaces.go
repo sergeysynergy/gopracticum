@@ -13,4 +13,6 @@ type Storer interface {
 	GetCounter(string) (metrics.Counter, error)
 	GetCounters() map[string]metrics.Counter
 	BulkPutCounters(map[string]metrics.Counter)
+
+	GetMetrics() metrics.ProxyMetric
 }

@@ -3,6 +3,7 @@ package filestore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -99,13 +100,20 @@ func (fs *FileStore) restoreMetrics() error {
 
 	data, err := ioutil.ReadFile(fs.storeFile)
 	if err != nil {
+		os.Remove(fs.storeFile)
 		return err
 	}
 
 	m := storeMetrics{}
 	err = json.Unmarshal(data, &m)
 	if err != nil {
+		os.Remove(fs.storeFile)
 		return err
+	}
+
+	if len(m.Gauges) == 0 && len(m.Counters) == 0 {
+		os.Remove(fs.storeFile)
+		return fmt.Errorf("metrics not found in file '%s'", fs.storeFile)
 	}
 
 	fs.storage.BulkPutGauges(m.Gauges)

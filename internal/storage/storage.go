@@ -58,3 +58,10 @@ func (s *Storage) ToJSON() []byte {
 
 	return b.Bytes()
 }
+
+func (s *Storage) GetMetrics() metrics.ProxyMetric {
+	return metrics.ProxyMetric{
+		Gauges:   s.GetGauges(),
+		Counters: s.GetCounters(),
+	}
+}
