@@ -117,7 +117,7 @@ func TestGzipCompressor(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				body:        []byte(`<h1>Current metrics data:</h1><div><h2>Gauges</h2><div>Alloc - 1221.23</div></div><div><h2>Counters</h2></div>`),
-				contentType: "html/text",
+				contentType: "text/html",
 			},
 		},
 	}
