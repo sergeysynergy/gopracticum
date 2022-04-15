@@ -29,6 +29,8 @@ func New(opts ...HandlerOptions) *Handler {
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
+	h.router.Use(gzipDecompressor)
+	h.router.Use(gzipCompressor)
 	h.router.Use(middleware.RequestID)
 	h.router.Use(middleware.RealIP)
 	h.router.Use(middleware.Logger)

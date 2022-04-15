@@ -3,9 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
