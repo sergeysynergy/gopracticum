@@ -33,7 +33,7 @@ func TestUpdateHardBody(t *testing.T) {
 		{
 			name:        "Update not acceptable",
 			body:        []byte("Not acceptable"),
-			contentType: "application/json",
+			contentType: applicationJSON,
 			want: want{
 				statusCode: http.StatusNotAcceptable,
 			},
@@ -54,7 +54,7 @@ func TestUpdateHardBody(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
-			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			assert.Equal(t, applicationJSON, resp.Header().Get("Content-Type"))
 		})
 	}
 }
@@ -133,7 +133,7 @@ func TestUpdate(t *testing.T) {
 			client := resty.New()
 			resp, err := client.R().
 				EnableTrace().
-				SetHeader("Content-Type", "application/json").
+				SetHeader("Content-Type", applicationJSON).
 				SetHeader("Content-Encoding", "gzip").
 				SetBody(compressMetrics(t, tt.body)).
 				Post(ts.URL + "/update/")

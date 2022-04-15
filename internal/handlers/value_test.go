@@ -18,13 +18,13 @@ func TestValueContentType(t *testing.T) {
 
 	client := resty.New()
 	resp, err := client.R().
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", applicationJSON).
 		SetHeader("Content-Type", "bad type").
 		Post(ts.URL + "/value/")
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode())
-	assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+	assert.Equal(t, applicationJSON, resp.Header().Get("Content-Type"))
 }
 
 func TestValueUnmarshalError(t *testing.T) {
@@ -34,14 +34,14 @@ func TestValueUnmarshalError(t *testing.T) {
 
 	client := resty.New()
 	resp, err := client.R().
-		SetHeader("Accept", "application/json").
-		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", applicationJSON).
+		SetHeader("Content-Type", applicationJSON).
 		SetBody("{bad bad json").
 		Post(ts.URL + "/value/")
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotAcceptable, resp.StatusCode())
-	assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+	assert.Equal(t, applicationJSON, resp.Header().Get("Content-Type"))
 }
 
 func TestValue(t *testing.T) {
@@ -140,15 +140,15 @@ func TestValue(t *testing.T) {
 			m := myMetrics{}
 			client := resty.New()
 			resp, err := client.R().
-				SetHeader("Accept", "application/json").
-				SetHeader("Content-Type", "application/json").
+				SetHeader("Accept", applicationJSON).
+				SetHeader("Content-Type", applicationJSON).
 				SetBody(tt.body).
 				SetResult(&m).
 				Post(ts.URL + "/value/")
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
-			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			assert.Equal(t, applicationJSON, resp.Header().Get("Content-Type"))
 			assert.EqualValues(t, tt.want.body, m)
 		})
 	}

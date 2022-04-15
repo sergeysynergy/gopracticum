@@ -10,7 +10,7 @@ import (
 
 func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
-	if ct != "application/json" {
+	if ct != applicationJSON {
 		h.errorJSONUnsupportedMediaType(w)
 		return
 	}
@@ -60,7 +60,7 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", applicationJSON)
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }

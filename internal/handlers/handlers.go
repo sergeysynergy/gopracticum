@@ -14,6 +14,11 @@ import (
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
+const (
+	applicationJSON = "application/json"
+	textHTML        = "text/html"
+)
+
 type Handler struct {
 	router    chi.Router
 	storage   storage.Storer
@@ -132,7 +137,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("content-type", "text/html")
+	w.Header().Set("content-type", textHTML)
 	w.WriteHeader(http.StatusOK)
 
 	var b bytes.Buffer

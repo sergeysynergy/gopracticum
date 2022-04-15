@@ -23,7 +23,7 @@ func (h *Handler) errorJSON(w http.ResponseWriter, message string, statusCode in
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", applicationJSON)
 	w.WriteHeader(statusCode)
 	w.Write(b)
 }

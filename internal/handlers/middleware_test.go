@@ -83,9 +83,9 @@ func TestGzipDecompressor(t *testing.T) {
 
 			resp, err := client.R().
 				EnableTrace().
-				SetHeader("Accept", "application/json").
+				SetHeader("Accept", applicationJSON).
 				SetHeader("Accept-Encoding", "gzip").
-				SetHeader("Content-Type", "application/json").
+				SetHeader("Content-Type", applicationJSON).
 				SetHeader("Content-Encoding", "gzip").
 				SetBody(compress(t, data)).
 				SetResult(&m).
@@ -93,7 +93,7 @@ func TestGzipDecompressor(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
-			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			assert.Equal(t, applicationJSON, resp.Header().Get("Content-Type"))
 			assert.Equal(t, "gzip", resp.Header().Get("Content-Encoding"))
 			assert.EqualValues(t, tt.want.body, m)
 		})
@@ -117,7 +117,7 @@ func TestGzipCompressor(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				body:        []byte(`<h1>Current metrics data:</h1><div><h2>Gauges</h2><div>Alloc - 1221.23</div></div><div><h2>Counters</h2></div>`),
-				contentType: "text/html",
+				contentType: textHTML,
 			},
 		},
 	}

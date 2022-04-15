@@ -11,7 +11,7 @@ import (
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
-	if ct != "application/json" {
+	if ct != applicationJSON {
 		h.errorJSONUnsupportedMediaType(w)
 		return
 	}
