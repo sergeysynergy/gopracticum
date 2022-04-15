@@ -63,7 +63,7 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f, err := os.CreateTemp("./", "restore-metrics-test*.json")
+			f, err := os.CreateTemp("/tmp", "restore-metrics-test*.json")
 			assert.NoError(t, err)
 			defer os.Remove(f.Name())
 
