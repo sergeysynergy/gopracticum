@@ -42,4 +42,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	// записываем метрики в файл если storeInterval равен 0
+	if h.fileStore.GetStoreInterval() == 0 {
+		h.fileStore.WriteMetrics()
+	}
 }

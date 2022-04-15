@@ -56,11 +56,14 @@ func main() {
 	fmt.Println(":: cfg", cfg)
 
 	st := storage.New()
-	h := handlers.New(handlers.WithStorage(st))
 	fs := filestore.New(st,
 		filestore.WithRestore(cfg.restore),
 		filestore.WithStoreFile(cfg.storeFile),
 		filestore.WithStoreInterval(cfg.storeInterval),
+	)
+	h := handlers.New(
+		handlers.WithStorage(st),
+		handlers.WithFileStore(fs),
 	)
 
 	s := httpserver.New(

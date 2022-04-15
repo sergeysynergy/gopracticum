@@ -9,13 +9,15 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 type Handler struct {
-	router  chi.Router
-	storage storage.Storer
+	router    chi.Router
+	storage   storage.Storer
+	fileStore *filestore.FileStore
 }
 
 type HandlerOptions func(handler *Handler)
@@ -25,7 +27,8 @@ func New(opts ...HandlerOptions) *Handler {
 		// созданим новый роутер
 		router: chi.NewRouter(),
 		// определяем хранилище метрик, реализующее интерфейс Storer
-		storage: storage.New(),
+		storage:   storage.New(),
+		fileStore: filestore.New(storage.New()),
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
@@ -52,6 +55,12 @@ func New(opts ...HandlerOptions) *Handler {
 func WithStorage(st storage.Storer) HandlerOptions {
 	return func(handler *Handler) {
 		handler.storage = st
+	}
+}
+
+func WithFileStore(fs *filestore.FileStore) HandlerOptions {
+	return func(handler *Handler) {
+		handler.fileStore = fs
 	}
 }
 

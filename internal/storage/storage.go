@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/json"
 	"sync"
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
@@ -40,23 +38,6 @@ func WithCounters(counters map[string]metrics.Counter) Options {
 	return func(s *Storage) {
 		s.counters = counters
 	}
-}
-
-// ToJSON Вывод содержимого хранилища в формате JSON для тестовых целей.
-func (s *Storage) ToJSON() []byte {
-	var b bytes.Buffer
-
-	b.WriteString(`{"gauges":`)
-	g, _ := json.Marshal(s.gauges)
-	b.Write(g)
-	b.WriteString(`},`)
-
-	b.WriteString(`{"counters":`)
-	c, _ := json.Marshal(s.counters)
-	b.Write(c)
-	b.WriteString(`}`)
-
-	return b.Bytes()
 }
 
 func (s *Storage) GetMetrics() metrics.ProxyMetric {

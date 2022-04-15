@@ -93,7 +93,7 @@ func (s *Server) Serve() {
 	}()
 
 	// вызовем рутину периодического сохранения данных метрик в файл
-	if s.fileStore != nil {
+	if s.fileStore != nil && s.fileStore.GetStoreInterval() != 0 {
 		s.fileStore.WriteTicker()
 	}
 

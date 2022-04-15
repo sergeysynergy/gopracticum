@@ -160,12 +160,8 @@ func (fs *FileStore) Shutdown() error {
 }
 
 func (fs *FileStore) WriteTicker() {
+	// тикер должен работать только когда storeInterval больше нуля
 	if fs.storeInterval == 0 {
-		err := fs.WriteMetrics()
-		if err != nil {
-			log.Println("[ERROR] Failed to write metrics to disk -", err)
-		}
-
 		return
 	}
 
@@ -185,4 +181,8 @@ func (fs *FileStore) WriteTicker() {
 			}
 		}
 	}()
+}
+
+func (fs *FileStore) GetStoreInterval() time.Duration {
+	return fs.storeInterval
 }
