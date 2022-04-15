@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,14 +22,13 @@ func gzipDecompressor(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		// распаковываем тело запроса, если оно сжато gzip
 		if r.Header.Get("Content-Encoding") == "gzip" {
-			fmt.Println("::::::::: DECOMPRESSION ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
 			gz, err := gzip.NewReader(r.Body)
-			defer gz.Close()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			} else {
 				r.Body = gz
 			}
+			defer gz.Close()
 		}
 
 		next.ServeHTTP(w, r)
@@ -46,7 +44,6 @@ func gzipCompressor(next http.Handler) http.Handler {
 		// создаём объект Writer с жатием, если клиент поддерживает gzip
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-			defer gz.Close()
 			if err != nil {
 				log.Println("[ERROR] Failed to create gzip writer - ", err)
 			} else {
@@ -54,6 +51,7 @@ func gzipCompressor(next http.Handler) http.Handler {
 				// заменяем Writer на новый, с поддержкой gzip-сжатия
 				gzw = gzipWriter{ResponseWriter: w, Writer: gz}
 			}
+			defer gz.Close()
 		}
 
 		next.ServeHTTP(gzw, r)
