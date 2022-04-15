@@ -13,11 +13,6 @@ import (
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
-type storeMetrics struct {
-	Gauges   map[string]metrics.Gauge
-	Counters map[string]metrics.Counter
-}
-
 type FileStore struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -27,6 +22,7 @@ type FileStore struct {
 	storeFile     string        // имя файла, где хранятся значения метрик (пустое значение — отключает функцию записи на диск)
 	storeInterval time.Duration // интервал периодического сохранения метрик на диск, 0 — делает запись синхронной
 	restore       bool
+	removeBroken  bool
 }
 
 type Option func(fs *FileStore)
@@ -36,6 +32,7 @@ func New(st storage.Storer, opts ...Option) *FileStore {
 		defaultRestore       = true
 		defaultStoreFile     = "/tmp/devops-metrics-db.json"
 		defaultStoreInterval = 300 * time.Second
+		defaultRemoveBroken  = true
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -47,6 +44,7 @@ func New(st storage.Storer, opts ...Option) *FileStore {
 		storeFile:     defaultStoreFile,
 		storeInterval: defaultStoreInterval,
 		restore:       defaultRestore,
+		removeBroken:  defaultRemoveBroken,
 	}
 	for _, opt := range opts {
 		opt(fs)
@@ -93,6 +91,19 @@ func WithStoreInterval(interval time.Duration) Option {
 	}
 }
 
+func (fs *FileStore) removeBrokenFile(err error) error {
+	if !fs.removeBroken {
+		return err
+	}
+
+	errRm := os.Remove(fs.storeFile)
+	if errRm != nil {
+		return errRm
+	}
+
+	return err
+}
+
 func (fs *FileStore) restoreMetrics() error {
 	if !fs.restore {
 		return nil
@@ -100,20 +111,18 @@ func (fs *FileStore) restoreMetrics() error {
 
 	data, err := ioutil.ReadFile(fs.storeFile)
 	if err != nil {
-		os.Remove(fs.storeFile)
-		return err
+		return fs.removeBrokenFile(err)
 	}
 
-	m := storeMetrics{}
+	m := metrics.ProxyMetric{}
 	err = json.Unmarshal(data, &m)
 	if err != nil {
-		os.Remove(fs.storeFile)
-		return err
+		return fs.removeBrokenFile(err)
 	}
 
 	if len(m.Gauges) == 0 && len(m.Counters) == 0 {
-		os.Remove(fs.storeFile)
-		return fmt.Errorf("metrics not found in file '%s'", fs.storeFile)
+		err = fmt.Errorf("metrics not found in file '%s'", fs.storeFile)
+		return fs.removeBrokenFile(err)
 	}
 
 	fs.storage.BulkPutGauges(m.Gauges)
@@ -124,7 +133,7 @@ func (fs *FileStore) restoreMetrics() error {
 }
 
 func (fs *FileStore) WriteMetrics() error {
-	m := &storeMetrics{
+	m := &metrics.ProxyMetric{
 		Gauges:   fs.storage.GetGauges(),
 		Counters: fs.storage.GetCounters(),
 	}
