@@ -30,10 +30,9 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
 	cfg := new(config)
-	flag.StringVar(&cfg.addr, "a", "127.0.0.1:8080", "address to listen on")
-	flag.DurationVar(&cfg.reportInterval, "r", 10*time.Second, "pol metrics to server interval")
+	flag.StringVar(&cfg.addr, "a", "127.0.0.1:8080", "server address")
+	flag.DurationVar(&cfg.reportInterval, "r", 10*time.Second, "interval for sending metrics to the server")
 	flag.DurationVar(&cfg.pollInterval, "p", 2*time.Second, "update metrics interval")
 	flag.Parse()
 
