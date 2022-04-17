@@ -28,12 +28,12 @@ type Handler struct {
 type HandlerOptions func(handler *Handler)
 
 func New(opts ...HandlerOptions) *Handler {
+	st := storage.New()
 	h := &Handler{
 		// созданим новый роутер
 		router: chi.NewRouter(),
 		// определяем хранилище метрик, реализующее интерфейс Storer
-		storage:   storage.New(),
-		fileStore: filestore.New(storage.New()),
+		storage: st,
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
@@ -47,10 +47,14 @@ func New(opts ...HandlerOptions) *Handler {
 	// определим маршруты
 	h.setRoutes()
 
-	// Применяем в цикле каждую опцию
+	// применяем в цикле каждую опцию
 	for _, opt := range opts {
 		// *Handler как аргумент
 		opt(h)
+	}
+	// если fileStore не был проиницилизированн отдельно - инициализируем
+	if h.fileStore == nil {
+		h.fileStore = filestore.New(st)
 	}
 
 	// вернуть измененный экземпляр Handler
