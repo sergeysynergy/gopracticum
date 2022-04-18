@@ -13,6 +13,7 @@ import (
 )
 
 func TestAgentSendJsonRequest(t *testing.T) {
+	key := "Passw0rd33"
 	type myMetrics struct {
 		ID    string  `json:"id"`
 		MType string  `json:"type"`
@@ -26,6 +27,7 @@ func TestAgentSendJsonRequest(t *testing.T) {
 	tests := []struct {
 		name    string
 		metrics *metrics.Metrics
+		key     string
 		want    want
 	}{
 		{
@@ -45,12 +47,48 @@ func TestAgentSendJsonRequest(t *testing.T) {
 			},
 		},
 		{
+			name: "Hash gauge ok",
+			metrics: &metrics.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Value: func() *float64 { v := 4242.23; return &v }(),
+				Hash:  metrics.GetGaugeHash(key, "Alloc", 4242.23),
+			},
+			key: key,
+			want: want{
+				statusCode: http.StatusOK,
+				metrics: myMetrics{
+					ID:    "Alloc",
+					MType: "gauge",
+					Value: 4242.23,
+				},
+			},
+		},
+		{
 			name: "counter ok",
 			metrics: &metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
 				Delta: func() *int64 { v := int64(2); return &v }(),
 			},
+			want: want{
+				statusCode: http.StatusOK,
+				metrics: myMetrics{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: 2,
+				},
+			},
+		},
+		{
+			name: "Hash counter ok",
+			metrics: &metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+				Delta: func() *int64 { v := int64(2); return &v }(),
+				Hash:  metrics.GetCounterHash(key, "PollCount", 2),
+			},
+			key: key,
 			want: want{
 				statusCode: http.StatusOK,
 				metrics: myMetrics{

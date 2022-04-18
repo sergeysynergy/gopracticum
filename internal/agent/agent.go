@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -24,6 +23,7 @@ type Agent struct {
 	reportInterval time.Duration
 	protocol       string
 	addr           string
+	key            string
 }
 
 type Option func(agent *Agent)
@@ -83,6 +83,12 @@ func WithReportInterval(duration time.Duration) Option {
 	}
 }
 
+func WithKey(key string) Option {
+	return func(a *Agent) {
+		a.key = key
+	}
+}
+
 func (a *Agent) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Функцию cancel нужно обязательно выполнить в коде, иначе сборщик мусора не удалит созданный дочерний контекст
@@ -139,13 +145,19 @@ func (a *Agent) sendReport(ctx context.Context) {
 			MType: "gauge",
 			Value: &gauge,
 		}
+
+		// добавляем хэш, если задан ключ key
+		if a.key != "" {
+			m.Hash = metrics.GetGaugeHash(a.key, m.ID, *m.Value)
+		}
+
 		err := a.sendJSONRequest(ctx, m)
 		if err != nil {
 			a.handleError(err)
 			return
 		}
-
 	}
+
 	for k, v := range a.storage.GetCounters() {
 		counter := int64(v)
 		m := &metrics.Metrics{
@@ -153,6 +165,12 @@ func (a *Agent) sendReport(ctx context.Context) {
 			MType: "counter",
 			Delta: &counter,
 		}
+
+		// добавляем хэш, если задан ключ key
+		if a.key != "" {
+			m.Hash = metrics.GetCounterHash(a.key, m.ID, *m.Delta)
+		}
+
 		err := a.sendJSONRequest(ctx, m)
 		if err != nil {
 			a.handleError(err)
@@ -161,57 +179,6 @@ func (a *Agent) sendReport(ctx context.Context) {
 	}
 
 	log.Println("Выполнена отправка отчёта")
-}
-
-func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key string, value interface{}) {
-	defer wg.Done()
-
-	// http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
-	var endpoint string
-
-	switch metric := value.(type) {
-	case metrics.Gauge:
-		endpoint = fmt.Sprintf("%s%s/update/%s/%s/%f", a.protocol, a.addr, "gauge", key, metric)
-	case metrics.Counter:
-		endpoint = fmt.Sprintf("%s%s/update/%s/%s/%d", a.protocol, a.addr, "counter", key, metric)
-	default:
-		a.handleError(fmt.Errorf("неизвестный тип метрики"))
-		return
-	}
-
-	resp, err := a.client.R().
-		SetContext(ctx).
-		Post(endpoint)
-
-	if err != nil {
-		a.handleError(err)
-		return
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		respErr := fmt.Errorf("%v", resp.StatusCode())
-		a.handleError(respErr)
-		return
-	}
-}
-
-func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) error {
-	endpoint := a.protocol + a.addr + "/update/"
-
-	resp, err := a.client.R().
-		SetContext(ctx).
-		SetBody(m).
-		Post(endpoint)
-
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("%v", resp.StatusCode())
-	}
-
-	return nil
 }
 
 func (a *Agent) handleError(err error) {
@@ -258,4 +225,23 @@ func (a *Agent) Update() {
 	a.storage.IncreaseCounter(metrics.PollCount)
 
 	log.Println("Выполнено обновление метрик")
+}
+
+func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) error {
+	endpoint := a.protocol + a.addr + "/update/"
+
+	resp, err := a.client.R().
+		SetContext(ctx).
+		SetBody(m).
+		Post(endpoint)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("%v", resp.StatusCode())
+	}
+
+	return nil
 }

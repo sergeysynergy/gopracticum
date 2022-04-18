@@ -23,11 +23,12 @@ type Handler struct {
 	router    chi.Router
 	storage   storage.Storer
 	fileStore *filestore.FileStore
+	key       string
 }
 
-type HandlerOptions func(handler *Handler)
+type Options func(handler *Handler)
 
-func New(opts ...HandlerOptions) *Handler {
+func New(opts ...Options) *Handler {
 	st := storage.New()
 	h := &Handler{
 		// созданим новый роутер
@@ -52,24 +53,26 @@ func New(opts ...HandlerOptions) *Handler {
 		// *Handler как аргумент
 		opt(h)
 	}
-	// если fileStore не был проиницилизированн отдельно - инициализируем
-	if h.fileStore == nil {
-		h.fileStore = filestore.New(st)
-	}
 
 	// вернуть измененный экземпляр Handler
 	return h
 }
 
-func WithStorage(st storage.Storer) HandlerOptions {
+func WithStorage(st storage.Storer) Options {
 	return func(handler *Handler) {
 		handler.storage = st
 	}
 }
 
-func WithFileStore(fs *filestore.FileStore) HandlerOptions {
+func WithFileStore(fs *filestore.FileStore) Options {
 	return func(handler *Handler) {
 		handler.fileStore = fs
+	}
+}
+
+func WithKey(key string) Options {
+	return func(handler *Handler) {
+		handler.key = key
 	}
 }
 
@@ -171,4 +174,37 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	b.WriteString(`</div>`)
 
 	w.Write(b.Bytes())
+}
+
+func (h *Handler) hashCheck(m *metrics.Metrics) error {
+	if h.key == "" {
+		return nil
+	}
+
+	switch m.MType {
+	case "gauge":
+		if m.Value == nil {
+			m.Value = new(float64)
+		}
+
+		mac1 := m.Hash
+		mac2 := metrics.GetGaugeHash(h.key, m.ID, *m.Value)
+		if mac1 != mac2 {
+			return fmt.Errorf("hash check failed for gauge metric")
+		}
+	case "counter":
+		if m.Delta == nil {
+			m.Delta = new(int64)
+		}
+
+		mac1 := m.Hash
+		mac2 := metrics.GetCounterHash(h.key, m.ID, *m.Delta)
+		if mac1 != mac2 {
+			return fmt.Errorf("hash check failed for counter metric")
+		}
+	default:
+		err := fmt.Errorf("not implemented")
+		return err
+	}
+	return nil
 }

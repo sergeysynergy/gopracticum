@@ -45,6 +45,7 @@ func TestValueUnmarshalError(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
+	key := "Passw0rd33"
 	type myMetrics struct {
 		ID    string  `json:"id"`
 		MType string  `json:"type"`
@@ -59,6 +60,7 @@ func TestValue(t *testing.T) {
 		name    string
 		handler *Handler
 		body    metrics.Metrics
+		key     string
 		want    want
 	}{
 		{
@@ -116,11 +118,51 @@ func TestValue(t *testing.T) {
 			},
 		},
 		{
+			name: "Hashed gauge ok",
+			handler: New(
+				WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23}))),
+				WithKey(key),
+			),
+			body: metrics.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Hash:  metrics.GetGaugeHash(key, "Alloc", 0),
+			},
+			want: want{
+				statusCode: http.StatusOK,
+				body: myMetrics{
+					ID:    "Alloc",
+					MType: "gauge",
+					Value: 1221.23,
+				},
+			},
+		},
+		{
 			name:    "Counter ok",
 			handler: New(WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})))),
 			body: metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
+			},
+			want: want{
+				statusCode: http.StatusOK,
+				body: myMetrics{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: 42,
+				},
+			},
+		},
+		{
+			name: "Hash counter ok",
+			handler: New(
+				WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42}))),
+				WithKey(key),
+			),
+			body: metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+				Hash:  metrics.GetCounterHash(key, "PollCount", 0),
 			},
 			want: want{
 				statusCode: http.StatusOK,

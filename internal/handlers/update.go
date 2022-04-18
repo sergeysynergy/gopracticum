@@ -32,8 +32,16 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	switch m.MType {
 	case "gauge":
+		err = h.hashCheck(&m)
+		if err != nil {
+			h.errorJSON(w, err.Error(), http.StatusBadRequest)
+		}
 		h.storage.PutGauge(m.ID, metrics.Gauge(*m.Value))
 	case "counter":
+		err = h.hashCheck(&m)
+		if err != nil {
+			h.errorJSON(w, err.Error(), http.StatusBadRequest)
+		}
 		h.storage.PostCounter(m.ID, metrics.Counter(*m.Delta))
 	default:
 		err = fmt.Errorf("not implemented")
@@ -43,8 +51,18 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	// записываем метрики в файл если storeInterval равен 0
+	h.storeMetrics(w)
+}
+
+// записываем метрики в файл если storeInterval равен 0
+func (h *Handler) storeMetrics(w http.ResponseWriter) {
+	if h.fileStore == nil {
+		return
+	}
 	if h.fileStore.GetStoreInterval() == 0 {
-		h.fileStore.WriteMetrics()
+		err := h.fileStore.WriteMetrics()
+		if err != nil {
+			h.errorJSON(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }

@@ -86,12 +86,14 @@ func compressMetrics(t *testing.T, m metrics.Metrics) []byte {
 }
 
 func TestUpdate(t *testing.T) {
+	key := "Passw0rd"
 	type want struct {
 		statusCode int
 	}
 	tests := []struct {
 		name string
 		body metrics.Metrics
+		key  string
 		want want
 	}{
 		{
@@ -113,6 +115,19 @@ func TestUpdate(t *testing.T) {
 			},
 		},
 		{
+			name: "Hashed gauge ok",
+			body: metrics.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Value: func() *float64 { v := 42.24; return &v }(),
+				Hash:  metrics.GetGaugeHash(key, "Alloc", 42.24),
+			},
+			key: key,
+			want: want{
+				statusCode: http.StatusOK,
+			},
+		},
+		{
 			name: "Counter ok",
 			body: metrics.Metrics{
 				ID:    "PollCount",
@@ -123,10 +138,23 @@ func TestUpdate(t *testing.T) {
 				statusCode: http.StatusOK,
 			},
 		},
+		{
+			name: "Hashed counter ok",
+			body: metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+				Delta: func() *int64 { d := int64(2); return &d }(),
+				Hash:  metrics.GetCounterHash(key, "PollCount", 2),
+			},
+			key: key,
+			want: want{
+				statusCode: http.StatusOK,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New()
+			handler := New(WithKey(tt.key))
 			ts := httptest.NewServer(handler.router)
 			defer ts.Close()
 

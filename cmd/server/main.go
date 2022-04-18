@@ -16,6 +16,7 @@ type config struct {
 	Restore       bool          `env:"RESTORE"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
+	Key           string        `env:"KEY"`
 }
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 	flag.BoolVar(&cfg.Restore, "r", true, "restore metrics from file")
 	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "write metrics to file interval")
 	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "file to store metrics")
+	flag.StringVar(&cfg.Key, "k", "", "sign key")
 	flag.Parse()
 
 	err := env.Parse(cfg)
@@ -31,17 +33,24 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	// объявим новое хранилище, которое реализует интерфейс Storer
 	st := storage.New()
+
+	// создадим файловое хранилище на базе storage
 	fs := filestore.New(st,
 		filestore.WithRestore(cfg.Restore),
 		filestore.WithStoreFile(cfg.StoreFile),
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
+
+	// подключим обработчики запросов, которые используют storage и fileStore
 	h := handlers.New(
 		handlers.WithStorage(st),
 		handlers.WithFileStore(fs),
+		handlers.WithKey(cfg.Key),
 	)
 
+	// проиницилизируем сервер с использованием ранее объявленных обработчиков и файлового хранилища
 	s := httpserver.New(
 		h.GetRouter(),
 		fs,
