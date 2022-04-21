@@ -83,6 +83,12 @@ func WithReportInterval(duration time.Duration) Option {
 	}
 }
 
+func WithKey(key string) Option {
+	return func(a *Agent) {
+		a.key = key
+	}
+}
+
 func (a *Agent) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Функцию cancel нужно обязательно выполнить в коде, иначе сборщик мусора не удалит созданный дочерний контекст
