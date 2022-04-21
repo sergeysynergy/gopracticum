@@ -32,16 +32,24 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	switch m.MType {
 	case "gauge":
-		err = h.hashCheck(&m)
-		if err != nil {
-			h.errorJSON(w, err.Error(), http.StatusBadRequest)
+		if h.key != "" && m.Hash != "" {
+			if metrics.GaugeHash(h.key, m.ID, *m.Value) != m.Hash {
+				err = fmt.Errorf("hash check failed for gauge metric")
+				h.errorJSON(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
+
 		h.storage.PutGauge(m.ID, metrics.Gauge(*m.Value))
 	case "counter":
-		err = h.hashCheck(&m)
-		if err != nil {
-			h.errorJSON(w, err.Error(), http.StatusBadRequest)
+		if h.key != "" && m.Hash != "" {
+			if metrics.CounterHash(h.key, m.ID, *m.Delta) != m.Hash {
+				err = fmt.Errorf("hash check failed for counter metric")
+				h.errorJSON(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
+
 		h.storage.PostCounter(m.ID, metrics.Counter(*m.Delta))
 	default:
 		err = fmt.Errorf("not implemented")

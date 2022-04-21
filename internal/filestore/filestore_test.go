@@ -1,11 +1,12 @@
 package filestore
 
 import (
-	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/sergeysynergy/gopracticum/internal/storage"
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 func TestFileStoreRestoreMetrics(t *testing.T) {

@@ -34,11 +34,6 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		h.errorJSON(w, "Metric type needed", http.StatusBadRequest)
 		return
 	case "gauge":
-		err = h.hashCheck(&m)
-		if err != nil {
-			h.errorJSON(w, err.Error(), http.StatusBadRequest)
-		}
-
 		gauge, errGet := h.storage.GetGauge(m.ID)
 		if errGet != nil {
 			h.errorJSON(w, errGet.Error(), http.StatusNotFound)
@@ -46,12 +41,12 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		}
 		val := float64(gauge)
 		m.Value = &val
-	case "counter":
-		err = h.hashCheck(&m)
-		if err != nil {
-			h.errorJSON(w, err.Error(), http.StatusBadRequest)
-		}
 
+		// добавим хэш в ответ при наличии ключа
+		if h.key != "" {
+			m.Hash = metrics.GaugeHash(h.key, m.ID, *m.Value)
+		}
+	case "counter":
 		counter, errGet := h.storage.GetCounter(m.ID)
 		if errGet != nil {
 			h.errorJSON(w, errGet.Error(), http.StatusNotFound)
@@ -59,6 +54,11 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		}
 		delta := int64(counter)
 		m.Delta = &delta
+
+		// добавим хэш в ответ при наличии ключа
+		if h.key != "" {
+			m.Hash = metrics.CounterHash(h.key, m.ID, *m.Delta)
+		}
 	default:
 		h.errorJSON(w, "Given metric type not implemented", http.StatusNotImplemented)
 		return

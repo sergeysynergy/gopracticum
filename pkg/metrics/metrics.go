@@ -79,48 +79,21 @@ type Metrics struct {
 	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-/*
-func (m *Metrics) GaugeHash(key string) []byte {
-	//gaugeKey := hash(fmt.Sprintf("%s:gauge:%f", id, value), key)
-
-	msg := fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
-	h := hmac.New(sha256.New, []byte(key))
-	h.Write([]byte(msg))
-
-	return h.Sum(nil)
-}
-
-func (m *Metrics) CounterHash(key string) []byte {
-	//counterKey := hash(fmt.Sprintf("%s:counter:%d", id, delta), key)
-
-	msg := fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
-	h := hmac.New(sha256.New, []byte(key))
-	h.Write([]byte(msg))
-
-	return h.Sum(nil)
-}
-
-*/
-
 type ProxyMetric struct {
 	Gauges   map[string]Gauge
 	Counters map[string]Counter
 }
 
-func GetGaugeHash(key, id string, val float64) string {
-	//gaugeKey := hash(fmt.Sprintf("%s:gauge:%f", id, value), key)
-
-	msg := fmt.Sprintf("%s:gauge:%f", id, val)
+func GaugeHash(key, id string, value float64) string {
+	msg := fmt.Sprintf("%s:gauge:%f", id, value)
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write([]byte(msg))
 	// переводим в 16-тиричный вид, чтобы хэш не пострадал при передаче в строковом представлении
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func GetCounterHash(key, id string, val int64) string {
-	//counterKey := hash(fmt.Sprintf("%s:counter:%d", id, delta), key)
-
-	msg := fmt.Sprintf("%s:counter:%d", id, val)
+func CounterHash(key, id string, delta int64) string {
+	msg := fmt.Sprintf("%s:counter:%d", id, delta)
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write([]byte(msg))
 	// переводим в 16-тиричный вид, чтобы хэш не пострадал при передаче в строковом представлении

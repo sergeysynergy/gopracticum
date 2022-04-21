@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"github.com/caarlos0/env/v6"
+	"log"
+	"time"
+
 	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/sergeysynergy/gopracticum/internal/handlers"
 	"github.com/sergeysynergy/gopracticum/internal/httpserver"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"log"
-	"time"
 )
 
 type config struct {

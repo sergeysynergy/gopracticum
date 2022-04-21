@@ -32,7 +32,7 @@ func New(st storage.Storer, opts ...Option) *FileStore {
 		defaultRestore       = true
 		defaultStoreFile     = "/tmp/devops-metrics-db.json"
 		defaultStoreInterval = 300 * time.Second
-		defaultRemoveBroken  = true
+		defaultRemoveBroken  = false
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -50,15 +50,15 @@ func New(st storage.Storer, opts ...Option) *FileStore {
 		opt(fs)
 	}
 
+	// если специально (через WithStoreFile) задано пустое имя файла, возвращаем nil вместо объекта
+	if fs.storeFile == "" {
+		return nil
+	}
+
 	// восстановим из файла в хранилище значения метрик, если restore = true
 	err := fs.restoreMetrics()
 	if err != nil {
 		log.Printf("[ERROR] Failed to restore metrics from file '%s' - %s\n", fs.storeFile, err)
-	}
-
-	// если специально (через WithStoreFile) задано пустое имя файла, возвращаем nil вместо объекта
-	if fs.storeFile == "" {
-		return nil
 	}
 
 	file, err := os.OpenFile(fs.storeFile, os.O_WRONLY|os.O_CREATE, 0777)

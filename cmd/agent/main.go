@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"github.com/caarlos0/env/v6"
-	"github.com/sergeysynergy/gopracticum/internal/agent"
 	"log"
 	"time"
+
+	"github.com/sergeysynergy/gopracticum/internal/agent"
 )
 
 type Config struct {

@@ -13,29 +13,36 @@ import (
 )
 
 func TestAgentSendJsonRequest(t *testing.T) {
-	key := "Passw0rd33"
+	key := "/tmp/mQUXIrA"
 	type myMetrics struct {
 		ID    string  `json:"id"`
 		MType string  `json:"type"`
 		Delta int64   `json:"delta,omitempty"`
 		Value float64 `json:"value,omitempty"`
+		Hash  string  `json:"hash,omitempty"`
 	}
 	type want struct {
+		wantErr    bool
 		statusCode int
 		metrics    myMetrics
 	}
 	tests := []struct {
-		name    string
-		metrics *metrics.Metrics
-		key     string
-		want    want
+		name          string
+		metricsUpdate *metrics.Metrics
+		metricsValue  *metrics.Metrics
+		key           string
+		want          want
 	}{
 		{
 			name: "gauge ok",
-			metrics: &metrics.Metrics{
+			metricsUpdate: &metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
 				Value: func() *float64 { v := 4242.23; return &v }(),
+			},
+			metricsValue: &metrics.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
 			},
 			want: want{
 				statusCode: http.StatusOK,
@@ -48,11 +55,15 @@ func TestAgentSendJsonRequest(t *testing.T) {
 		},
 		{
 			name: "Hash gauge ok",
-			metrics: &metrics.Metrics{
+			metricsUpdate: &metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
 				Value: func() *float64 { v := 4242.23; return &v }(),
-				Hash:  metrics.GetGaugeHash(key, "Alloc", 4242.23),
+				Hash:  metrics.GaugeHash(key, "Alloc", 4242.23),
+			},
+			metricsValue: &metrics.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
 			},
 			key: key,
 			want: want{
@@ -61,15 +72,20 @@ func TestAgentSendJsonRequest(t *testing.T) {
 					ID:    "Alloc",
 					MType: "gauge",
 					Value: 4242.23,
+					Hash:  metrics.GaugeHash(key, "Alloc", 4242.23),
 				},
 			},
 		},
 		{
 			name: "counter ok",
-			metrics: &metrics.Metrics{
+			metricsUpdate: &metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
 				Delta: func() *int64 { v := int64(2); return &v }(),
+			},
+			metricsValue: &metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
 			},
 			want: want{
 				statusCode: http.StatusOK,
@@ -82,11 +98,15 @@ func TestAgentSendJsonRequest(t *testing.T) {
 		},
 		{
 			name: "Hash counter ok",
-			metrics: &metrics.Metrics{
+			metricsUpdate: &metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
 				Delta: func() *int64 { v := int64(2); return &v }(),
-				Hash:  metrics.GetCounterHash(key, "PollCount", 2),
+				Hash:  metrics.CounterHash(key, "PollCount", 2),
+			},
+			metricsValue: &metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
 			},
 			key: key,
 			want: want{
@@ -95,30 +115,55 @@ func TestAgentSendJsonRequest(t *testing.T) {
 					ID:    "PollCount",
 					MType: "counter",
 					Delta: 2,
+					Hash:  metrics.CounterHash(key, "PollCount", 2),
 				},
+			},
+		},
+		{
+			name: "Hash counter bad",
+			metricsUpdate: &metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+				Delta: func() *int64 { v := int64(2); return &v }(),
+				Hash:  "bad hash",
+			},
+			metricsValue: &metrics.Metrics{
+				ID:    "PollCount",
+				MType: "counter",
+			},
+			key: key,
+			want: want{
+				wantErr:    true,
+				statusCode: http.StatusBadRequest,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := handlers.New()
+			handler := handlers.New(handlers.WithKey(tt.key))
 			ts := httptest.NewServer(handler.GetRouter())
 			defer ts.Close()
 
 			agent := New(WithAddress(ts.URL[7:]))
 
-			err := agent.sendJSONRequest(context.Background(), tt.metrics)
-			assert.NoError(t, err)
+			resp, err := agent.sendJSONRequest(context.Background(), tt.metricsUpdate)
 
-			fmt.Println("::", ts.URL+"/value/")
+			if tt.want.wantErr {
+				assert.Error(t, err)
+				assert.Equal(t, tt.want.statusCode, resp.StatusCode())
+				return
+			}
+
+			assert.NoError(t, err)
 
 			m := myMetrics{}
 			client := resty.New()
 			fmt.Println(ts.URL)
-			resp, err := client.R().
+			resp, err = client.R().
 				SetHeader("Accept", "application/json").
+				SetHeader("Accept-Encoding", "gzip").
 				SetHeader("Content-Type", "application/json").
-				SetBody(tt.metrics).
+				SetBody(tt.metricsValue).
 				SetResult(&m).
 				Post(ts.URL + "/value/")
 

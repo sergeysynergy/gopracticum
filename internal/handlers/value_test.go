@@ -126,7 +126,6 @@ func TestValue(t *testing.T) {
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
-				Hash:  metrics.GetGaugeHash(key, "Alloc", 0),
 			},
 			want: want{
 				statusCode: http.StatusOK,
@@ -162,7 +161,6 @@ func TestValue(t *testing.T) {
 			body: metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
-				Hash:  metrics.GetCounterHash(key, "PollCount", 0),
 			},
 			want: want{
 				statusCode: http.StatusOK,

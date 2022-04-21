@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -80,69 +81,6 @@ func (h *Handler) GetRouter() chi.Router {
 	return h.router
 }
 
-func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "type")
-	name := chi.URLParam(r, "name")
-	value := chi.URLParam(r, "value")
-
-	switch metricType {
-	case "gauge":
-		var gauge metrics.Gauge
-		err := gauge.FromString(value)
-		if err != nil {
-			msg := fmt.Sprintf("value %v not acceptable - %v", name, err)
-			http.Error(w, msg, http.StatusBadRequest)
-			return
-		}
-		h.storage.PutGauge(name, gauge)
-	case "counter":
-		var counter metrics.Counter
-		err := counter.FromString(value)
-		if err != nil {
-			msg := fmt.Sprintf("value %v not acceptable - %v", name, err)
-			http.Error(w, msg, http.StatusBadRequest)
-			return
-		}
-		h.storage.PostCounter(name, counter)
-	default:
-		err := fmt.Errorf("not implemented")
-		http.Error(w, err.Error(), http.StatusNotImplemented)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "type")
-	name := chi.URLParam(r, "name")
-	var val string
-
-	switch metricType {
-	case "gauge":
-		gauge, err := h.storage.GetGauge(name)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		val = strconv.FormatFloat(float64(gauge), 'f', -1, 64)
-	case "counter":
-		counter, err := h.storage.GetCounter(name)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		val = fmt.Sprintf("%d", counter)
-	default:
-		err := fmt.Errorf("not implemented")
-		http.Error(w, err.Error(), http.StatusNotImplemented)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(val))
-}
-
 func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("content-type", textHTML)
 	w.WriteHeader(http.StatusOK)
@@ -188,8 +126,10 @@ func (h *Handler) hashCheck(m *metrics.Metrics) error {
 		}
 
 		mac1 := m.Hash
-		mac2 := metrics.GetGaugeHash(h.key, m.ID, *m.Value)
+		mac2 := metrics.GaugeHash(h.key, m.ID, *m.Value)
 		if mac1 != mac2 {
+			log.Printf(":: mac1 - %s\n", mac1)
+			log.Printf(":: mac2 - %s\n", mac2)
 			return fmt.Errorf("hash check failed for gauge metric")
 		}
 	case "counter":
@@ -198,7 +138,7 @@ func (h *Handler) hashCheck(m *metrics.Metrics) error {
 		}
 
 		mac1 := m.Hash
-		mac2 := metrics.GetCounterHash(h.key, m.ID, *m.Delta)
+		mac2 := metrics.CounterHash(h.key, m.ID, *m.Delta)
 		if mac1 != mac2 {
 			return fmt.Errorf("hash check failed for counter metric")
 		}

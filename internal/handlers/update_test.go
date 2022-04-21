@@ -120,7 +120,7 @@ func TestUpdate(t *testing.T) {
 				ID:    "Alloc",
 				MType: "gauge",
 				Value: func() *float64 { v := 42.24; return &v }(),
-				Hash:  metrics.GetGaugeHash(key, "Alloc", 42.24),
+				Hash:  metrics.GaugeHash(key, "Alloc", 42.24),
 			},
 			key: key,
 			want: want{
@@ -144,7 +144,7 @@ func TestUpdate(t *testing.T) {
 				ID:    "PollCount",
 				MType: "counter",
 				Delta: func() *int64 { d := int64(2); return &d }(),
-				Hash:  metrics.GetCounterHash(key, "PollCount", 2),
+				Hash:  metrics.CounterHash(key, "PollCount", 2),
 			},
 			key: key,
 			want: want{

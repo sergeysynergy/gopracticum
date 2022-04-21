@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sergeysynergy/gopracticum/internal/storage"
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 func TestPost(t *testing.T) {

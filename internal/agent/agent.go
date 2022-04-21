@@ -83,12 +83,6 @@ func WithReportInterval(duration time.Duration) Option {
 	}
 }
 
-func WithKey(key string) Option {
-	return func(a *Agent) {
-		a.key = key
-	}
-}
-
 func (a *Agent) Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Функцию cancel нужно обязательно выполнить в коде, иначе сборщик мусора не удалит созданный дочерний контекст
@@ -148,10 +142,10 @@ func (a *Agent) sendReport(ctx context.Context) {
 
 		// добавляем хэш, если задан ключ key
 		if a.key != "" {
-			m.Hash = metrics.GetGaugeHash(a.key, m.ID, *m.Value)
+			m.Hash = metrics.GaugeHash(a.key, m.ID, *m.Value)
 		}
 
-		err := a.sendJSONRequest(ctx, m)
+		_, err := a.sendJSONRequest(ctx, m)
 		if err != nil {
 			a.handleError(err)
 			return
@@ -168,10 +162,10 @@ func (a *Agent) sendReport(ctx context.Context) {
 
 		// добавляем хэш, если задан ключ key
 		if a.key != "" {
-			m.Hash = metrics.GetCounterHash(a.key, m.ID, *m.Delta)
+			m.Hash = metrics.CounterHash(a.key, m.ID, *m.Delta)
 		}
 
-		err := a.sendJSONRequest(ctx, m)
+		_, err := a.sendJSONRequest(ctx, m)
 		if err != nil {
 			a.handleError(err)
 			return
@@ -227,21 +221,24 @@ func (a *Agent) Update() {
 	log.Println("Выполнено обновление метрик")
 }
 
-func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) error {
+func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) (*resty.Response, error) {
 	endpoint := a.protocol + a.addr + "/update/"
 
 	resp, err := a.client.R().
+		SetHeader("Accept", "application/json").
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Type", "application/json").
 		SetContext(ctx).
 		SetBody(m).
 		Post(endpoint)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("%v", resp.StatusCode())
+		return resp, fmt.Errorf("invalid status code %v", resp.StatusCode())
 	}
 
-	return nil
+	return resp, nil
 }
