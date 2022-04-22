@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -102,8 +103,12 @@ func TestValue(t *testing.T) {
 			},
 		},
 		{
-			name:    "Gauge ok",
-			handler: New(WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})))),
+			name: "Gauge ok",
+			handler: New(
+				WithRepoStorer(filestore.New(filestore.WithStorage(
+					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
+				))),
+			),
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -120,7 +125,9 @@ func TestValue(t *testing.T) {
 		{
 			name: "Hashed gauge ok",
 			handler: New(
-				WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23}))),
+				WithRepoStorer(filestore.New(filestore.WithStorage(
+					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
+				))),
 				WithKey(key),
 			),
 			body: metrics.Metrics{
@@ -137,8 +144,12 @@ func TestValue(t *testing.T) {
 			},
 		},
 		{
-			name:    "Counter ok",
-			handler: New(WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})))),
+			name: "Counter ok",
+			handler: New(
+				WithRepoStorer(filestore.New(filestore.WithStorage(
+					storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
+				))),
+			),
 			body: metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
@@ -155,7 +166,9 @@ func TestValue(t *testing.T) {
 		{
 			name: "Hash counter ok",
 			handler: New(
-				WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42}))),
+				WithRepoStorer(filestore.New(filestore.WithStorage(
+					storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
+				))),
 				WithKey(key),
 			),
 			body: metrics.Metrics{

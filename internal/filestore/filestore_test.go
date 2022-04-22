@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
@@ -73,11 +72,13 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			fs := New(storage.New(), WithStoreFile(f.Name()))
-			err = fs.restoreMetrics()
+			fs := New(
+				WithStoreFile(f.Name()),
+				WithRestore(true),
+			)
 			if !tt.want.wantErr {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want.body, fs.storage.GetMetrics())
+				assert.Equal(t, tt.want.body, fs.GetMetrics())
 			}
 		})
 	}

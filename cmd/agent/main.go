@@ -35,7 +35,7 @@ func main() {
 		agent.WithAddress(cfg.Addr),
 		agent.WithReportInterval(cfg.ReportInterval),
 		agent.WithPollInterval(cfg.PollInterval),
-		agent.WithKey(cfg.Key),
+		//agent.WithKey(cfg.Key),
 	)
 
 	a.Run()

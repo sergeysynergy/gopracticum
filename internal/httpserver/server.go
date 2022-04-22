@@ -2,25 +2,25 @@ package httpserver
 
 import (
 	"context"
+	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/sergeysynergy/gopracticum/internal/filestore"
 )
 
 type Server struct {
-	server       *http.Server
-	fileStore    *filestore.FileStore
+	server *http.Server
+	//fileStore    *filestore.FileStore
+	storer       storage.RepoStorer
 	graceTimeout time.Duration // время на штатное завершения работы сервера
 }
 
 type Option func(server *Server)
 
-func New(h http.Handler, fs *filestore.FileStore, opts ...Option) *Server {
+func New(h http.Handler, repoStorer storage.RepoStorer, opts ...Option) *Server {
 	const (
 		defaultAddress      = "127.0.0.1:8080"
 		defaultGraceTimeout = 20 * time.Second
@@ -34,7 +34,7 @@ func New(h http.Handler, fs *filestore.FileStore, opts ...Option) *Server {
 			MaxHeaderBytes: 1 << 20,          // 2^20 = 128 Kb
 			Handler:        h,
 		},
-		fileStore:    fs,
+		storer:       repoStorer,
 		graceTimeout: defaultGraceTimeout,
 	}
 	// Применяем в цикле каждую опцию
@@ -74,10 +74,10 @@ func (s *Server) Serve() {
 			}
 		}()
 
-		// штатно завершим работу рутины периодического сохранения данных метрик в файл
-		err := s.fileStore.Shutdown()
+		// штатно завершим работу репозитория хранения данных метрик
+		err := s.storer.Shutdown()
 		if err != nil {
-			log.Fatal("[ERROR] File store shutdown error - ", err)
+			log.Fatal("[ERROR] Repository shutdown error - ", err)
 		}
 
 		// Штатно завершаем работу HTTP-сервера не прерывая никаких активных подключений.
@@ -93,13 +93,14 @@ func (s *Server) Serve() {
 	}()
 
 	// вызовем рутину периодического сохранения данных метрик в файл
-	if s.fileStore != nil && s.fileStore.GetStoreInterval() != 0 {
-		s.fileStore.WriteTicker()
+	err := s.storer.WriteTicker()
+	if err != nil {
+		log.Println("[WARNING] Failed to start repository writing ticker - ", err)
 	}
 
 	// запустим сервер
 	log.Printf("starting HTTP-server at %s\n", s.server.Addr)
-	err := s.server.ListenAndServe()
+	err = s.server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal("[ERROR] Failed to run HTTP-server", err)
 	}

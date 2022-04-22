@@ -1,6 +1,8 @@
 package storage
 
-import "github.com/sergeysynergy/gopracticum/pkg/metrics"
+import (
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+)
 
 type Storer interface {
 	PutGauge(string, metrics.Gauge)
@@ -15,4 +17,11 @@ type Storer interface {
 	BulkPutCounters(map[string]metrics.Counter)
 
 	GetMetrics() metrics.ProxyMetric
+}
+
+type RepoStorer interface {
+	Storer
+	WriteTicker() error
+	WriteMetrics() (int, error)
+	Shutdown() error
 }

@@ -9,23 +9,22 @@ import (
 	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/sergeysynergy/gopracticum/internal/handlers"
 	"github.com/sergeysynergy/gopracticum/internal/httpserver"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
 type config struct {
 	Addr          string        `env:"ADDRESS"`
+	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
 	Key           string        `env:"KEY"`
 }
 
 func main() {
 	cfg := new(config)
 	flag.StringVar(&cfg.Addr, "a", "127.0.0.1:8080", "address to listen on")
-	flag.BoolVar(&cfg.Restore, "r", true, "restore metrics from file")
-	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "write metrics to file interval")
 	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "file to store metrics")
+	flag.BoolVar(&cfg.Restore, "r", true, "restore metrics from file")
+	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "interval for saving metrics in repository")
 	flag.StringVar(&cfg.Key, "k", "", "sign key")
 	flag.Parse()
 
@@ -35,26 +34,25 @@ func main() {
 	}
 
 	// объявим новое хранилище, которое реализует интерфейс Storer
-	st := storage.New()
+	//st := storage.New()
 
 	// создадим файловое хранилище на базе storage
-	fs := filestore.New(st,
-		filestore.WithRestore(cfg.Restore),
+	repoStorer := filestore.New(
 		filestore.WithStoreFile(cfg.StoreFile),
+		filestore.WithRestore(cfg.Restore),
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
 	// подключим обработчики запросов, которые используют storage и fileStore
 	h := handlers.New(
-		handlers.WithStorage(st),
-		handlers.WithFileStore(fs),
+		handlers.WithRepoStorer(repoStorer),
 		handlers.WithKey(cfg.Key),
 	)
 
 	// проиницилизируем сервер с использованием ранее объявленных обработчиков и файлового хранилища
 	s := httpserver.New(
 		h.GetRouter(),
-		fs,
+		repoStorer,
 		httpserver.WithAddress(cfg.Addr),
 	)
 

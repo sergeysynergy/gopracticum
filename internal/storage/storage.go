@@ -16,7 +16,7 @@ type Storage struct {
 
 type Options func(storage *Storage)
 
-func New(opts ...Options) Storer {
+func New(opts ...Options) *Storage {
 	s := &Storage{
 		gauges:   make(map[string]metrics.Gauge, metrics.GaugeLen),
 		counters: make(map[string]metrics.Counter, metrics.CounterLen),

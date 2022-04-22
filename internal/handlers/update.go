@@ -40,7 +40,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		h.storage.PutGauge(m.ID, metrics.Gauge(*m.Value))
+		h.storer.PutGauge(m.ID, metrics.Gauge(*m.Value))
 	case "counter":
 		if h.key != "" && m.Hash != "" {
 			if metrics.CounterHash(h.key, m.ID, *m.Delta) != m.Hash {
@@ -50,27 +50,19 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		h.storage.PostCounter(m.ID, metrics.Counter(*m.Delta))
+		h.storer.PostCounter(m.ID, metrics.Counter(*m.Delta))
 	default:
 		err = fmt.Errorf("not implemented")
-		http.Error(w, err.Error(), http.StatusNotImplemented)
+		h.errorJSON(w, err.Error(), http.StatusNotImplemented)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	h.storeMetrics(w)
-}
-
-// записываем метрики в файл если storeInterval равен 0
-func (h *Handler) storeMetrics(w http.ResponseWriter) {
-	if h.fileStore == nil {
+	// запишем метрики в файл
+	_, err = h.storer.WriteMetrics()
+	if err != nil {
+		h.errorJSON(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	if h.fileStore.GetStoreInterval() == 0 {
-		err := h.fileStore.WriteMetrics()
-		if err != nil {
-			h.errorJSON(w, err.Error(), http.StatusInternalServerError)
-		}
 	}
 }

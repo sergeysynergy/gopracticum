@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -88,8 +89,10 @@ func TestGet(t *testing.T) {
 		want
 	}{
 		{
-			name:    "Gauge ok",
-			handler: New(WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})))),
+			name: "Gauge ok",
+			handler: New(WithRepoStorer(filestore.New(filestore.WithStorage(
+				storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
+			)))),
 			request: "/value/gauge/Alloc",
 			want: want{
 				statusCode: http.StatusOK,
@@ -106,8 +109,10 @@ func TestGet(t *testing.T) {
 			},
 		},
 		{
-			name:    "Counter ok",
-			handler: New(WithStorage(storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})))),
+			name: "Counter ok",
+			handler: New(WithRepoStorer(filestore.New(filestore.WithStorage(
+				storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
+			)))),
 			request: "/value/counter/PollCount",
 			want: want{
 				statusCode: http.StatusOK,

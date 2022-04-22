@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -56,8 +57,12 @@ func TestGzipDecompressor(t *testing.T) {
 		want    want
 	}{
 		{
-			name:    "Test gzip decompression",
-			handler: New(WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})))),
+			name: "Test gzip decompression",
+			handler: New(
+				WithRepoStorer(filestore.New(filestore.WithStorage(
+					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
+				))),
+			),
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -123,7 +128,9 @@ func TestGzipCompressor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New(WithStorage(storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23}))))
+			handler := New(WithRepoStorer(filestore.New(filestore.WithStorage(
+				storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
+			))))
 			ts := httptest.NewServer(handler.router)
 			defer ts.Close()
 

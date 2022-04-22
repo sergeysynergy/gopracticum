@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"log"
 	"net/http"
 	"sort"
 	"strconv"
 
-	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
@@ -21,21 +21,20 @@ const (
 )
 
 type Handler struct {
-	router    chi.Router
-	storage   storage.Storer
-	fileStore *filestore.FileStore
-	key       string
+	router chi.Router
+	//storage   storage.Storer
+	storer storage.RepoStorer
+	//fileStore *filestore.FileStore
+	key string
 }
 
 type Options func(handler *Handler)
 
 func New(opts ...Options) *Handler {
-	st := storage.New()
 	h := &Handler{
 		// созданим новый роутер
 		router: chi.NewRouter(),
-		// определяем хранилище метрик, реализующее интерфейс Storer
-		storage: st,
+		//storage: st,
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
@@ -55,25 +54,24 @@ func New(opts ...Options) *Handler {
 		opt(h)
 	}
 
+	// создадим хранилище метрик реализующее интерфейс RepoStorer, если оно не было проинициализировано через WithRepoStorer
+	if h.storer == nil {
+		h.storer = filestore.New()
+	}
+
 	// вернуть измененный экземпляр Handler
 	return h
 }
 
-func WithStorage(st storage.Storer) Options {
-	return func(handler *Handler) {
-		handler.storage = st
-	}
-}
-
-func WithFileStore(fs *filestore.FileStore) Options {
-	return func(handler *Handler) {
-		handler.fileStore = fs
+func WithRepoStorer(st storage.RepoStorer) Options {
+	return func(h *Handler) {
+		h.storer = st
 	}
 }
 
 func WithKey(key string) Options {
-	return func(handler *Handler) {
-		handler.key = key
+	return func(h *Handler) {
+		h.key = key
 	}
 }
 
@@ -93,7 +91,7 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 		value float64
 	}
 	gauges := make([]gauge, 0, metrics.GaugeLen)
-	for k, val := range h.storage.GetGauges() {
+	for k, val := range h.storer.GetGauges() {
 		gauges = append(gauges, gauge{key: k, value: float64(val)})
 	}
 	sort.Slice(gauges, func(i, j int) bool { return gauges[i].key < gauges[j].key })
@@ -106,7 +104,7 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	b.WriteString(`</div>`)
 
 	b.WriteString(`<div><h2>Counters</h2>`)
-	for k, val := range h.storage.GetCounters() {
+	for k, val := range h.storer.GetCounters() {
 		b.WriteString(fmt.Sprintf("<div>%s - %d</div>", k, val))
 	}
 	b.WriteString(`</div>`)

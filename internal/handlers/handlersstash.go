@@ -23,7 +23,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
-		h.storage.PutGauge(name, gauge)
+		h.storer.PutGauge(name, gauge)
 	case "counter":
 		var counter metrics.Counter
 		err := counter.FromString(value)
@@ -32,7 +32,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
-		h.storage.PostCounter(name, counter)
+		h.storer.PostCounter(name, counter)
 	default:
 		err := fmt.Errorf("not implemented")
 		http.Error(w, err.Error(), http.StatusNotImplemented)
@@ -49,14 +49,14 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	switch metricType {
 	case "gauge":
-		gauge, err := h.storage.GetGauge(name)
+		gauge, err := h.storer.GetGauge(name)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		val = strconv.FormatFloat(float64(gauge), 'f', -1, 64)
 	case "counter":
-		counter, err := h.storage.GetCounter(name)
+		counter, err := h.storer.GetCounter(name)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -71,4 +71,3 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(val))
 }
-
