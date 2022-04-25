@@ -105,7 +105,7 @@ func TestValue(t *testing.T) {
 		{
 			name: "Gauge ok",
 			handler: New(
-				WithRepoStorer(filestore.New(filestore.WithStorage(
+				WithFileStorer(filestore.New(filestore.WithStorage(
 					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
 				))),
 			),
@@ -125,7 +125,7 @@ func TestValue(t *testing.T) {
 		{
 			name: "Hashed gauge ok",
 			handler: New(
-				WithRepoStorer(filestore.New(filestore.WithStorage(
+				WithFileStorer(filestore.New(filestore.WithStorage(
 					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
 				))),
 				WithKey(key),
@@ -146,7 +146,7 @@ func TestValue(t *testing.T) {
 		{
 			name: "Counter ok",
 			handler: New(
-				WithRepoStorer(filestore.New(filestore.WithStorage(
+				WithFileStorer(filestore.New(filestore.WithStorage(
 					storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
 				))),
 			),
@@ -166,7 +166,7 @@ func TestValue(t *testing.T) {
 		{
 			name: "Hash counter ok",
 			handler: New(
-				WithRepoStorer(filestore.New(filestore.WithStorage(
+				WithFileStorer(filestore.New(filestore.WithStorage(
 					storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
 				))),
 				WithKey(key),

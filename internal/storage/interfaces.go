@@ -12,7 +12,13 @@ type Storer interface {
 	GetMetrics() metrics.ProxyMetric
 }
 
-type RepoStorer interface {
+type DBStorer interface {
+	Storer
+	Ping() error
+	Shutdown() error
+}
+
+type FileStorer interface {
 	Storer
 	WriteTicker() error
 	WriteMetrics() (int, error)

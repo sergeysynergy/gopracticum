@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
@@ -21,14 +20,16 @@ const (
 )
 
 type Handler struct {
-	router chi.Router
-	storer storage.RepoStorer
-	key    string
+	router     chi.Router
+	storer     storage.Storer
+	fileStorer storage.FileStorer
+	dbStorer   storage.DBStorer
+	key        string
 }
 
-type Options func(handler *Handler)
+type Option func(handler *Handler)
 
-func New(opts ...Options) *Handler {
+func New(opts ...Option) *Handler {
 	h := &Handler{
 		// созданим новый роутер
 		router: chi.NewRouter(),
@@ -42,31 +43,47 @@ func New(opts ...Options) *Handler {
 	h.router.Use(middleware.Logger)
 	h.router.Use(middleware.Recoverer)
 
-	// определим маршруты
-	h.setRoutes()
-
 	// применяем в цикле каждую опцию
 	for _, opt := range opts {
 		// *Handler как аргумент
 		opt(h)
 	}
 
-	// создадим хранилище метрик реализующее интерфейс RepoStorer, если оно не было проинициализировано через WithRepoStorer
-	if h.storer == nil {
-		h.storer = filestore.New()
+	// проинициализируем хранилище Storer
+	if h.dbStorer != nil {
+		h.storer = h.dbStorer
+	} else if h.fileStorer != nil {
+		h.storer = h.fileStorer
+	} else {
+		h.storer = storage.New()
 	}
+
+	// определим маршруты
+	h.setRoutes()
 
 	// вернуть измененный экземпляр Handler
 	return h
 }
 
-func WithRepoStorer(st storage.RepoStorer) Options {
+func WithFileStorer(fs storage.FileStorer) Option {
 	return func(h *Handler) {
-		h.storer = st
+		if fs != nil {
+			log.Println("file storage plugin connected")
+			h.fileStorer = fs
+		}
 	}
 }
 
-func WithKey(key string) Options {
+func WithDBStorer(db storage.DBStorer) Option {
+	return func(h *Handler) {
+		if db != nil {
+			log.Println("database plugin connected")
+			h.dbStorer = db
+		}
+	}
+}
+
+func WithKey(key string) Option {
 	return func(h *Handler) {
 		h.key = key
 	}

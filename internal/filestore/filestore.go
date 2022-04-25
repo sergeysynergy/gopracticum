@@ -32,7 +32,7 @@ type FileStore struct {
 
 type Options func(fs *FileStore)
 
-func New(opts ...Options) storage.RepoStorer {
+func New(opts ...Options) storage.FileStorer {
 	const (
 		defaultStoreFile     = "/tmp/devops-metrics-db.json"
 		defaultRestore       = false
@@ -54,7 +54,12 @@ func New(opts ...Options) storage.RepoStorer {
 		opt(fs)
 	}
 
-	// создаём storage, если он не был проинициализирован через WithStorage
+	// вернём nil в случае пустого имени файла
+	if fs.storeFile == "" {
+		return nil
+	}
+
+	// создаём Storage, если он не был проинициализирован через WithStorage
 	if fs.Storage == nil {
 		fs.Storage = storage.New()
 	}
@@ -169,7 +174,7 @@ func (fs *FileStore) writeMetrics() (int, error) {
 		return 0, err
 	}
 
-	log.Printf("Written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(m.Gauges), len(m.Counters))
+	log.Printf("written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(m.Gauges), len(m.Counters))
 	return len(m.Gauges) + len(m.Counters), nil
 }
 

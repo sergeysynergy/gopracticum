@@ -59,7 +59,7 @@ func TestGzipDecompressor(t *testing.T) {
 		{
 			name: "Test gzip decompression",
 			handler: New(
-				WithRepoStorer(filestore.New(filestore.WithStorage(
+				WithFileStorer(filestore.New(filestore.WithStorage(
 					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
 				))),
 			),
@@ -128,7 +128,7 @@ func TestGzipCompressor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New(WithRepoStorer(filestore.New(filestore.WithStorage(
+			handler := New(WithFileStorer(filestore.New(filestore.WithStorage(
 				storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
 			))))
 			ts := httptest.NewServer(handler.router)
