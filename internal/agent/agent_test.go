@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sergeysynergy/gopracticum/internal/handlers"
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 func TestAgentSendJsonRequest(t *testing.T) {
@@ -144,7 +145,10 @@ func TestAgentSendJsonRequest(t *testing.T) {
 			ts := httptest.NewServer(handler.GetRouter())
 			defer ts.Close()
 
-			agent := New(WithAddress(ts.URL[7:]))
+			agent := New(
+				WithAddress(ts.URL[7:]),
+				WithKey(tt.key),
+			)
 
 			resp, err := agent.sendJSONRequest(context.Background(), tt.metricsUpdate)
 

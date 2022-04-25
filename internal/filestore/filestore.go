@@ -147,8 +147,7 @@ func (fs *FileStore) restoreMetrics() error {
 		return fs.removeBrokenFile(err)
 	}
 
-	fs.BulkPutGauges(m.Gauges)
-	fs.BulkPutCounters(m.Counters)
+	fs.PutMetrics(metrics.ProxyMetric{Gauges: m.Gauges, Counters: m.Counters})
 
 	log.Printf("Restored metrics from file '%s': gauges %d, counters %d", fs.storeFile, len(m.Gauges), len(m.Counters))
 	return nil
@@ -156,8 +155,8 @@ func (fs *FileStore) restoreMetrics() error {
 
 func (fs *FileStore) writeMetrics() (int, error) {
 	m := &metrics.ProxyMetric{
-		Gauges:   fs.GetGauges(),
-		Counters: fs.GetCounters(),
+		Gauges:   fs.GetMetrics().Gauges,
+		Counters: fs.GetMetrics().Counters,
 	}
 
 	_, err := fs.file.Seek(0, 0)

@@ -105,7 +105,7 @@ func TestGet(t *testing.T) {
 			request: "/value/gauge/NotFound",
 			want: want{
 				statusCode: http.StatusNotFound,
-				value:      "gauge metric with key 'NotFound' not found\n",
+				value:      "storage: metric not found\n",
 			},
 		},
 		{
@@ -125,7 +125,7 @@ func TestGet(t *testing.T) {
 			request: "/value/counter/NotFound",
 			want: want{
 				statusCode: http.StatusNotFound,
-				value:      "counter metric with key 'NotFound' not found\n",
+				value:      "storage: metric not found\n",
 			},
 		},
 		{

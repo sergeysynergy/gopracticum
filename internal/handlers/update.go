@@ -40,7 +40,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		h.storer.PutGauge(m.ID, metrics.Gauge(*m.Value))
+		err = h.storer.Put(m.ID, metrics.Gauge(*m.Value))
+		if err != nil {
+			h.errorJSON(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	case "counter":
 		if h.key != "" && m.Hash != "" {
 			if metrics.CounterHash(h.key, m.ID, *m.Delta) != m.Hash {
@@ -50,7 +54,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		h.storer.PostCounter(m.ID, metrics.Counter(*m.Delta))
+		err = h.storer.Put(m.ID, metrics.Counter(*m.Delta))
+		if err != nil {
+			h.errorJSON(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	default:
 		err = fmt.Errorf("not implemented")
 		h.errorJSON(w, err.Error(), http.StatusNotImplemented)

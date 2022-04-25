@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"log"
 	"net/http"
 	"sort"
 	"strconv"
 
+	"github.com/sergeysynergy/gopracticum/internal/filestore"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
@@ -22,10 +22,8 @@ const (
 
 type Handler struct {
 	router chi.Router
-	//storage   storage.Storer
 	storer storage.RepoStorer
-	//fileStore *filestore.FileStore
-	key string
+	key    string
 }
 
 type Options func(handler *Handler)
@@ -34,7 +32,6 @@ func New(opts ...Options) *Handler {
 	h := &Handler{
 		// созданим новый роутер
 		router: chi.NewRouter(),
-		//storage: st,
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
@@ -91,7 +88,7 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 		value float64
 	}
 	gauges := make([]gauge, 0, metrics.GaugeLen)
-	for k, val := range h.storer.GetGauges() {
+	for k, val := range h.storer.GetMetrics().Gauges {
 		gauges = append(gauges, gauge{key: k, value: float64(val)})
 	}
 	sort.Slice(gauges, func(i, j int) bool { return gauges[i].key < gauges[j].key })
@@ -104,7 +101,7 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	b.WriteString(`</div>`)
 
 	b.WriteString(`<div><h2>Counters</h2>`)
-	for k, val := range h.storer.GetCounters() {
+	for k, val := range h.storer.GetMetrics().Counters {
 		b.WriteString(fmt.Sprintf("<div>%s - %d</div>", k, val))
 	}
 	b.WriteString(`</div>`)

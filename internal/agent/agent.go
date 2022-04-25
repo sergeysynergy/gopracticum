@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
 	"math/rand"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
+	"github.com/sergeysynergy/gopracticum/internal/storage"
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 type Agent struct {
@@ -138,7 +139,7 @@ func (a *Agent) reportHandler(ctx context.Context) {
 
 // Выполняем отправку запросов метрик на сервер.
 func (a *Agent) sendReport(ctx context.Context) {
-	for k, v := range a.storage.GetGauges() {
+	for k, v := range a.storage.GetMetrics().Gauges {
 		gauge := float64(v)
 		m := &metrics.Metrics{
 			ID:    k,
@@ -158,7 +159,7 @@ func (a *Agent) sendReport(ctx context.Context) {
 		}
 	}
 
-	for k, v := range a.storage.GetCounters() {
+	for k, v := range a.storage.GetMetrics().Counters {
 		counter := int64(v)
 		m := &metrics.Metrics{
 			ID:    k,
@@ -220,9 +221,12 @@ func (a *Agent) Update() {
 	gauges[metrics.TotalAlloc] = metrics.Gauge(ms.TotalAlloc)
 	gauges[metrics.RandomValue] = metrics.Gauge(rand.Float64())
 
-	a.storage.BulkPutGauges(gauges)
+	a.storage.PutMetrics(metrics.ProxyMetric{Gauges: gauges})
 
-	a.storage.IncreaseCounter(metrics.PollCount)
+	err := a.storage.Put(metrics.PollCount, metrics.Counter(1))
+	if err != nil {
+		a.handleError(err)
+	}
 
 	log.Println("Выполнено обновление метрик")
 }

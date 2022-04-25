@@ -5,17 +5,10 @@ import (
 )
 
 type Storer interface {
-	PutGauge(string, metrics.Gauge)
-	GetGauge(string) (metrics.Gauge, error)
-	GetGauges() map[string]metrics.Gauge
-	BulkPutGauges(map[string]metrics.Gauge)
+	Put(string, interface{}) error
+	Get(string) (interface{}, error)
 
-	IncreaseCounter(string)
-	PostCounter(string, metrics.Counter)
-	GetCounter(string) (metrics.Counter, error)
-	GetCounters() map[string]metrics.Counter
-	BulkPutCounters(map[string]metrics.Counter)
-
+	PutMetrics(metrics.ProxyMetric)
 	GetMetrics() metrics.ProxyMetric
 }
 

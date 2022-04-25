@@ -2,13 +2,14 @@ package httpserver
 
 import (
 	"context"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
 type Server struct {

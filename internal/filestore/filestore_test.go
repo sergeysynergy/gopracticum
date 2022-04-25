@@ -57,6 +57,7 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 						"MSpanInuse":    68816,
 						"MSpanSys":      81920,
 					},
+					Counters: map[string]metrics.Counter{},
 				},
 			},
 		},

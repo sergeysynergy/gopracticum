@@ -34,25 +34,25 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		h.errorJSON(w, "Metric type needed", http.StatusBadRequest)
 		return
 	case "gauge":
-		gauge, errGet := h.storer.GetGauge(m.ID)
+		gauge, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
 			h.errorJSON(w, errGet.Error(), http.StatusNotFound)
 			return
 		}
-		val := float64(gauge)
-		m.Value = &val
+		value := float64(gauge.(metrics.Gauge))
+		m.Value = &value
 
 		// добавим хэш в ответ при наличии ключа
 		if h.key != "" {
 			m.Hash = metrics.GaugeHash(h.key, m.ID, *m.Value)
 		}
 	case "counter":
-		counter, errGet := h.storer.GetCounter(m.ID)
+		counter, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
 			h.errorJSON(w, errGet.Error(), http.StatusNotFound)
 			return
 		}
-		delta := int64(counter)
+		delta := int64(counter.(metrics.Counter))
 		m.Delta = &delta
 
 		// добавим хэш в ответ при наличии ключа
