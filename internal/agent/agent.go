@@ -113,7 +113,7 @@ func (a *Agent) pollHandler(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			a.Update()
+			a.Update(ctx)
 		case <-ctx.Done():
 			log.Println("Штатное завершение работы обновления метрик")
 			ticker.Stop()
@@ -139,7 +139,13 @@ func (a *Agent) reportHandler(ctx context.Context) {
 
 // Выполняем отправку запросов метрик на сервер.
 func (a *Agent) sendReport(ctx context.Context) {
-	for k, v := range a.storage.GetMetrics().Gauges {
+	mcs, err := a.storage.GetMetrics(ctx)
+	if err != nil {
+		a.handleError(err)
+		return
+	}
+
+	for k, v := range mcs.Gauges {
 		gauge := float64(v)
 		m := &metrics.Metrics{
 			ID:    k,
@@ -159,7 +165,7 @@ func (a *Agent) sendReport(ctx context.Context) {
 		}
 	}
 
-	for k, v := range a.storage.GetMetrics().Counters {
+	for k, v := range mcs.Counters {
 		counter := int64(v)
 		m := &metrics.Metrics{
 			ID:    k,
@@ -186,11 +192,11 @@ func (a *Agent) handleError(err error) {
 	log.Println("Ошибка -", err)
 }
 
-func (a *Agent) Update() {
+func (a *Agent) Update(ctx context.Context) {
 	ms := &runtime.MemStats{}
 	runtime.ReadMemStats(ms)
 
-	gauges := make(map[string]metrics.Gauge, metrics.GaugeLen)
+	gauges := make(map[string]metrics.Gauge, metrics.TypeGaugeLen)
 
 	gauges[metrics.Alloc] = metrics.Gauge(ms.Alloc)
 	gauges[metrics.BuckHashSys] = metrics.Gauge(ms.BuckHashSys)
@@ -221,9 +227,12 @@ func (a *Agent) Update() {
 	gauges[metrics.TotalAlloc] = metrics.Gauge(ms.TotalAlloc)
 	gauges[metrics.RandomValue] = metrics.Gauge(rand.Float64())
 
-	a.storage.PutMetrics(metrics.ProxyMetric{Gauges: gauges})
+	err := a.storage.PutMetrics(ctx, metrics.ProxyMetrics{Gauges: gauges})
+	if err != nil {
+		a.handleError(err)
+	}
 
-	err := a.storage.Put(metrics.PollCount, metrics.Counter(1))
+	err = a.storage.Put(ctx, metrics.PollCount, metrics.Counter(1))
 	if err != nil {
 		a.handleError(err)
 	}

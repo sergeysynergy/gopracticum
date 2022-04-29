@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -20,12 +21,14 @@ func (h *Handler) errorJSON(w http.ResponseWriter, message string, statusCode in
 	if err != nil {
 		msg := fmt.Sprintf(`{"Error": "Failed to marshal error - %s", "StatusCode": 500`, err)
 		w.Write([]byte(msg))
+		log.Println("[ERROR]", msg)
 		return
 	}
 
 	w.Header().Set("Content-Type", applicationJSON)
 	w.WriteHeader(statusCode)
 	w.Write(b)
+	log.Println("[ERROR]", e)
 }
 
 func (h *Handler) errorJSONUnsupportedMediaType(w http.ResponseWriter) {

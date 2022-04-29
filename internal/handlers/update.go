@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
@@ -30,8 +31,16 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !metrics.IsKnown(m.ID) {
+		log.Println("[WARNING] unknown metric ID", m.ID)
+	}
+
 	switch m.MType {
 	case "gauge":
+		if m.Value == nil {
+			h.errorJSON(w, "nil gauge value", http.StatusBadRequest)
+			return
+		}
 		if h.key != "" && m.Hash != "" {
 			if metrics.GaugeHash(h.key, m.ID, *m.Value) != m.Hash {
 				err = fmt.Errorf("hash check failed for gauge metric")
@@ -40,12 +49,16 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = h.storer.Put(m.ID, metrics.Gauge(*m.Value))
+		err = h.storer.Put(r.Context(), m.ID, metrics.Gauge(*m.Value))
 		if err != nil {
 			h.errorJSON(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	case "counter":
+		if m.Delta == nil {
+			h.errorJSON(w, "nil counter value", http.StatusBadRequest)
+			return
+		}
 		if h.key != "" && m.Hash != "" {
 			if metrics.CounterHash(h.key, m.ID, *m.Delta) != m.Hash {
 				err = fmt.Errorf("hash check failed for counter metric")
@@ -54,7 +67,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = h.storer.Put(m.ID, metrics.Counter(*m.Delta))
+		err = h.storer.Put(r.Context(), m.ID, metrics.Counter(*m.Delta))
 		if err != nil {
 			h.errorJSON(w, err.Error(), http.StatusBadRequest)
 			return

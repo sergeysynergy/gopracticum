@@ -141,7 +141,7 @@ func (fs *FileStore) restoreMetrics() error {
 		return fs.removeBrokenFile(err)
 	}
 
-	m := metrics.ProxyMetric{}
+	m := metrics.ProxyMetrics{}
 	err = json.Unmarshal(data, &m)
 	if err != nil {
 		return fs.removeBrokenFile(err)
@@ -152,16 +152,20 @@ func (fs *FileStore) restoreMetrics() error {
 		return fs.removeBrokenFile(err)
 	}
 
-	fs.PutMetrics(metrics.ProxyMetric{Gauges: m.Gauges, Counters: m.Counters})
+	err = fs.PutMetrics(context.Background(), metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
+	if err != nil {
+		return err
+	}
 
 	log.Printf("Restored metrics from file '%s': gauges %d, counters %d", fs.storeFile, len(m.Gauges), len(m.Counters))
 	return nil
 }
 
 func (fs *FileStore) writeMetrics() (int, error) {
-	m := &metrics.ProxyMetric{
-		Gauges:   fs.GetMetrics().Gauges,
-		Counters: fs.GetMetrics().Counters,
+	mcs, _ := fs.GetMetrics(context.Background())
+	m := &metrics.ProxyMetrics{
+		Gauges:   mcs.Gauges,
+		Counters: mcs.Counters,
 	}
 
 	_, err := fs.file.Seek(0, 0)

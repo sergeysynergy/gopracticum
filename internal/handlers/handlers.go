@@ -52,9 +52,12 @@ func New(opts ...Option) *Handler {
 	// проинициализируем хранилище Storer
 	if h.dbStorer != nil {
 		h.storer = h.dbStorer
+		log.Println("database storer chosen")
 	} else if h.fileStorer != nil {
+		log.Println("filestore storer chosen")
 		h.storer = h.fileStorer
 	} else {
+		log.Println("default storer chosen")
 		h.storer = storage.New()
 	}
 
@@ -93,7 +96,7 @@ func (h *Handler) GetRouter() chi.Router {
 	return h.router
 }
 
-func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", textHTML)
 	w.WriteHeader(http.StatusOK)
 
@@ -104,8 +107,15 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 		key   string
 		value float64
 	}
-	gauges := make([]gauge, 0, metrics.GaugeLen)
-	for k, val := range h.storer.GetMetrics().Gauges {
+
+	mcs, err := h.storer.GetMetrics(r.Context())
+	if err != nil {
+		h.errorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	gauges := make([]gauge, 0, metrics.TypeGaugeLen)
+	for k, val := range mcs.Gauges {
 		gauges = append(gauges, gauge{key: k, value: float64(val)})
 	}
 	sort.Slice(gauges, func(i, j int) bool { return gauges[i].key < gauges[j].key })
@@ -118,7 +128,7 @@ func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	b.WriteString(`</div>`)
 
 	b.WriteString(`<div><h2>Counters</h2>`)
-	for k, val := range h.storer.GetMetrics().Counters {
+	for k, val := range mcs.Counters {
 		b.WriteString(fmt.Sprintf("<div>%s - %d</div>", k, val))
 	}
 	b.WriteString(`</div>`)

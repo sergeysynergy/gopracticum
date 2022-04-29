@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"os"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -12,33 +11,52 @@ import (
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
+const (
+	initTimeOut  = 2 * time.Second
+	queryTimeOut = 1 * time.Second
+
+	queryCreateTable = `
+		CREATE TABLE public.metrics (
+			id text NOT NULL,
+			type text NOT NULL, 
+			value double precision,
+			delta bigint,
+			PRIMARY KEY (id)
+		);
+	`
+	queryInsertGauge   = `INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)`
+	queryInsertCounter = `INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)`
+	queryUpdateGauge   = `UPDATE metrics SET value = $2 WHERE id = $1`
+	queryUpdateCounter = `UPDATE metrics SET delta = $2 WHERE id = $1`
+	queryGet           = `SELECT id, type, value, delta FROM metrics WHERE id=$1`
+	queryGetMetrics    = `SELECT id, type, value, delta FROM metrics`
+)
+
+type metricsDB struct {
+	ID    string
+	MType string
+	Value sql.NullFloat64
+	Delta sql.NullInt64
+}
+
 type Storage struct {
-	*storage.Storage
 	db  *sql.DB
 	dsn string
 }
 
 type Options func(s *Storage)
 
-func New(opts ...Options) storage.DBStorer {
-	defaultDSN := "user=" + os.Getenv("USER") + " password=Passw0rd33 host=localhost port=5432 dbname=metrics"
-
-	s := &Storage{
-		Storage: storage.New(),
-		dsn:     defaultDSN,
-	}
-	for _, opt := range opts {
-		opt(s)
-	}
-
+func New(dsn string, opts ...Options) storage.DBStorer {
 	// вернём nil в случае пустой строки DSN
-	if s.dsn == "" {
+	if dsn == "" {
 		return nil
 	}
 
-	// создаём Storage, если он не был проинициализирован через WithStorage
-	if s.Storage == nil {
-		s.Storage = storage.New()
+	s := &Storage{
+		dsn: dsn,
+	}
+	for _, opt := range opts {
+		opt(s)
 	}
 
 	// проинициализируем подключение к БД
@@ -50,20 +68,6 @@ func New(opts ...Options) storage.DBStorer {
 	return s
 }
 
-func WithStorage(st *storage.Storage) Options {
-	return func(s *Storage) {
-		s.Storage = st
-	}
-}
-
-func WithDSN(dsn string) Options {
-	return func(s *Storage) {
-		if dsn != "" {
-			s.dsn = dsn
-		}
-	}
-}
-
 func (s *Storage) init() error {
 	db, err := sql.Open("pgx", s.dsn)
 	if err != nil {
@@ -71,7 +75,21 @@ func (s *Storage) init() error {
 	}
 	s.db = db
 
+	ctx, cancel := context.WithTimeout(context.Background(), initTimeOut)
+	defer cancel()
+
+	_, err = db.ExecContext(ctx, "select * from metrics;")
+	if err != nil {
+		_, err = db.ExecContext(ctx, queryCreateTable)
+		if err != nil {
+			return err
+		}
+
+		log.Println("table `metrics` created")
+	}
+
 	return nil
+
 }
 
 func (s *Storage) Ping() error {

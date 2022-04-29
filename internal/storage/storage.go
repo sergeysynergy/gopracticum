@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -24,8 +25,8 @@ type Options func(storage *Storage)
 
 func New(opts ...Options) *Storage {
 	s := &Storage{
-		gauges:   make(map[string]metrics.Gauge, metrics.GaugeLen),
-		counters: make(map[string]metrics.Counter, metrics.CounterLen),
+		gauges:   make(map[string]metrics.Gauge, metrics.TypeGaugeLen),
+		counters: make(map[string]metrics.Counter, metrics.TypeCounterLen),
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -46,7 +47,7 @@ func WithCounters(counters map[string]metrics.Counter) Options {
 	}
 }
 
-func (s *Storage) Put(key string, metric interface{}) error {
+func (s *Storage) Put(_ context.Context, key string, metric interface{}) error {
 	switch m := metric.(type) {
 	case metrics.Gauge:
 		s.gaugesMu.Lock()
@@ -69,7 +70,7 @@ func (s *Storage) Put(key string, metric interface{}) error {
 	return nil
 }
 
-func (s *Storage) Get(key string) (interface{}, error) {
+func (s *Storage) Get(_ context.Context, key string) (interface{}, error) {
 	s.countersMu.Lock()
 	defer s.countersMu.Unlock()
 	delta, ok := s.counters[key]
@@ -87,7 +88,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return nil, ErrNotFound
 }
 
-func (s *Storage) PutMetrics(m metrics.ProxyMetric) {
+func (s *Storage) PutMetrics(_ context.Context, m metrics.ProxyMetrics) error {
 	// для удобства вызова PutMetrics проиницилизируем нулевой хэш Gauges
 	if m.Gauges == nil {
 		m.Gauges = make(map[string]metrics.Gauge)
@@ -105,9 +106,11 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetric) {
 	s.countersMu.Lock()
 	s.counters = m.Counters
 	s.countersMu.Unlock()
+
+	return nil
 }
 
-func (s *Storage) GetMetrics() metrics.ProxyMetric {
+func (s *Storage) GetMetrics(_ context.Context) (metrics.ProxyMetrics, error) {
 	s.gaugesMu.RLock()
 	gauges := s.gauges
 	s.gaugesMu.RUnlock()
@@ -116,8 +119,8 @@ func (s *Storage) GetMetrics() metrics.ProxyMetric {
 	counters := s.counters
 	s.countersMu.RUnlock()
 
-	return metrics.ProxyMetric{
+	return metrics.ProxyMetrics{
 		Gauges:   gauges,
 		Counters: counters,
-	}
+	}, nil
 }

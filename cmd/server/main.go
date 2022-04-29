@@ -50,10 +50,7 @@ func main() {
 	)
 
 	// создадим хранилище с использование базы данных на базе Storage
-	dbStorer := db.New(
-		db.WithStorage(st),
-		db.WithDSN(cfg.DatabaseDSN),
-	)
+	dbStorer := db.New(cfg.DatabaseDSN)
 
 	// подключим обработчики запросов, которые используют storage и fileStore
 	h := handlers.New(
