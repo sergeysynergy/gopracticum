@@ -128,7 +128,7 @@ func (a *Agent) reportHandler(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			a.sendReport(ctx)
+			a.sendReportUpdates(ctx)
 		case <-ctx.Done():
 			log.Println("Штатное завершение работы отправки метрик")
 			ticker.Stop()
@@ -138,51 +138,58 @@ func (a *Agent) reportHandler(ctx context.Context) {
 }
 
 // Выполняем отправку запросов метрик на сервер.
-func (a *Agent) sendReport(ctx context.Context) {
-	mcs, err := a.storage.GetMetrics(ctx)
+func (a *Agent) sendReportUpdates(ctx context.Context) {
+	hm := make([]metrics.Metrics, 0, metrics.TypeGaugeLen+metrics.TypeCounterLen)
+
+	prm, err := a.storage.GetMetrics(ctx)
 	if err != nil {
 		a.handleError(err)
 		return
 	}
 
-	for k, v := range mcs.Gauges {
-		gauge := float64(v)
-		m := &metrics.Metrics{
-			ID:    k,
-			MType: "gauge",
-			Value: &gauge,
-		}
+	var hash string
+
+	for k, v := range prm.Gauges {
+		value := float64(v)
 
 		// добавляем хэш, если задан ключ key
 		if a.key != "" {
-			m.Hash = metrics.GaugeHash(a.key, m.ID, *m.Value)
+			hash = metrics.GaugeHash(a.key, k, value)
 		}
 
-		_, err := a.sendJSONRequest(ctx, m)
-		if err != nil {
-			a.handleError(err)
-			return
-		}
+		hm = append(hm, metrics.Metrics{
+			ID:    k,
+			MType: metrics.TypeGauge,
+			Value: &value,
+			Hash:  hash,
+		})
 	}
 
-	for k, v := range mcs.Counters {
-		counter := int64(v)
-		m := &metrics.Metrics{
-			ID:    k,
-			MType: "counter",
-			Delta: &counter,
-		}
+	for k, v := range prm.Counters {
+		delta := int64(v)
 
 		// добавляем хэш, если задан ключ key
 		if a.key != "" {
-			m.Hash = metrics.CounterHash(a.key, m.ID, *m.Delta)
+			hash = metrics.CounterHash(a.key, k, delta)
 		}
 
-		_, err := a.sendJSONRequest(ctx, m)
-		if err != nil {
-			a.handleError(err)
-			return
-		}
+		hm = append(hm, metrics.Metrics{
+			ID:    k,
+			MType: metrics.TypeCounter,
+			Delta: &delta,
+			Hash:  hash,
+		})
+	}
+
+	if len(hm) == 0 {
+		log.Println("[WARNING] Пустой массив метрик, отправлять нечего")
+		return
+	}
+
+	_, err = a.sendUpdates(ctx, hm)
+	if err != nil {
+		a.handleError(err)
+		return
 	}
 
 	log.Println("Выполнена отправка отчёта")
@@ -196,6 +203,7 @@ func (a *Agent) Update(ctx context.Context) {
 	ms := &runtime.MemStats{}
 	runtime.ReadMemStats(ms)
 
+	prm := metrics.NewProxyMetrics()
 	gauges := make(map[string]metrics.Gauge, metrics.TypeGaugeLen)
 
 	gauges[metrics.Alloc] = metrics.Gauge(ms.Alloc)
@@ -227,12 +235,11 @@ func (a *Agent) Update(ctx context.Context) {
 	gauges[metrics.TotalAlloc] = metrics.Gauge(ms.TotalAlloc)
 	gauges[metrics.RandomValue] = metrics.Gauge(rand.Float64())
 
-	err := a.storage.PutMetrics(ctx, metrics.ProxyMetrics{Gauges: gauges})
-	if err != nil {
-		a.handleError(err)
-	}
+	prm.Gauges = gauges
 
-	err = a.storage.Put(ctx, metrics.PollCount, metrics.Counter(1))
+	prm.Counters[metrics.PollCount] = 1
+
+	err := a.storage.PutMetrics(ctx, prm)
 	if err != nil {
 		a.handleError(err)
 	}
@@ -240,15 +247,15 @@ func (a *Agent) Update(ctx context.Context) {
 	log.Println("Выполнено обновление метрик")
 }
 
-func (a *Agent) sendJSONRequest(ctx context.Context, m *metrics.Metrics) (*resty.Response, error) {
-	endpoint := a.protocol + a.addr + "/update/"
+func (a *Agent) sendUpdates(ctx context.Context, hm []metrics.Metrics) (*resty.Response, error) {
+	endpoint := a.protocol + a.addr + "/updates/"
 
 	resp, err := a.client.R().
 		SetHeader("Accept", "application/json").
 		SetHeader("Accept-Encoding", "gzip").
 		SetHeader("Content-Type", "application/json").
 		SetContext(ctx).
-		SetBody(m).
+		SetBody(hm).
 		Post(endpoint)
 
 	if err != nil {

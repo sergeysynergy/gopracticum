@@ -28,7 +28,7 @@ func main() {
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Postgres DSN")
 	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "file to store metrics")
 	flag.StringVar(&cfg.Key, "k", "", "sign key")
-	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "interval for saving metrics in repository")
+	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "interval for saving to file")
 	flag.BoolVar(&cfg.Restore, "r", true, "restore metrics from file")
 	flag.Parse()
 

@@ -11,6 +11,8 @@ type Storer interface {
 
 	PutMetrics(context.Context, metrics.ProxyMetrics) error
 	GetMetrics(context.Context) (metrics.ProxyMetrics, error)
+
+	Restore(context.Context, metrics.ProxyMetrics) error
 }
 
 type DBStorer interface {
@@ -22,6 +24,8 @@ type DBStorer interface {
 
 	PutMetrics(context.Context, metrics.ProxyMetrics) error
 	GetMetrics(context.Context) (metrics.ProxyMetrics, error)
+
+	Restore(context.Context, metrics.ProxyMetrics) error
 }
 
 type FileStorer interface {

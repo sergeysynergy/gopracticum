@@ -47,22 +47,27 @@ func WithCounters(counters map[string]metrics.Counter) Options {
 	}
 }
 
+func (s *Storage) add(key string, delta metrics.Counter) {
+	s.countersMu.Lock()
+	defer s.countersMu.Unlock()
+
+	_, ok := s.counters[key]
+	if !ok {
+		s.counters[key] = delta
+	} else {
+		s.counters[key] += delta
+	}
+
+}
+
 func (s *Storage) Put(_ context.Context, key string, metric interface{}) error {
 	switch m := metric.(type) {
 	case metrics.Gauge:
 		s.gaugesMu.Lock()
-		defer s.gaugesMu.Unlock()
 		s.gauges[key] = m
+		s.gaugesMu.Unlock()
 	case metrics.Counter:
-		s.countersMu.Lock()
-		defer s.countersMu.Unlock()
-
-		_, ok := s.counters[key]
-		if !ok {
-			s.counters[key] = m
-		} else {
-			s.counters[key] += m
-		}
+		s.add(key, m)
 	default:
 		return ErrNotImplemented
 	}
@@ -103,9 +108,9 @@ func (s *Storage) PutMetrics(_ context.Context, m metrics.ProxyMetrics) error {
 	s.gauges = m.Gauges
 	s.gaugesMu.Unlock()
 
-	s.countersMu.Lock()
-	s.counters = m.Counters
-	s.countersMu.Unlock()
+	for k, v := range m.Counters {
+		s.add(k, v)
+	}
 
 	return nil
 }
@@ -123,4 +128,52 @@ func (s *Storage) GetMetrics(_ context.Context) (metrics.ProxyMetrics, error) {
 		Gauges:   gauges,
 		Counters: counters,
 	}, nil
+}
+
+func (s *Storage) GetHashedMetrics(key string) []metrics.Metrics {
+	hm := make([]metrics.Metrics, 0, metrics.TypeGaugeLen+metrics.TypeCounterLen)
+
+	s.gaugesMu.RLock()
+	gauges := s.gauges
+	s.gaugesMu.RUnlock()
+
+	s.countersMu.RLock()
+	counters := s.counters
+	s.countersMu.RUnlock()
+
+	var hash string
+
+	for k, v := range gauges {
+		value := float64(v)
+
+		// добавляем хэш, если задан ключ key
+		if key != "" {
+			hash = metrics.GaugeHash(key, k, value)
+		}
+
+		hm = append(hm, metrics.Metrics{
+			ID:    k,
+			MType: metrics.TypeGauge,
+			Value: &value,
+			Hash:  hash,
+		})
+	}
+
+	for k, v := range counters {
+		delta := int64(v)
+
+		// добавляем хэш, если задан ключ key
+		if key != "" {
+			hash = metrics.CounterHash(key, k, delta)
+		}
+
+		hm = append(hm, metrics.Metrics{
+			ID:    k,
+			MType: metrics.TypeCounter,
+			Delta: &delta,
+			Hash:  hash,
+		})
+	}
+
+	return hm
 }

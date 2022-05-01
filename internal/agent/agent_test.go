@@ -150,7 +150,7 @@ func TestAgentSendJsonRequest(t *testing.T) {
 				WithKey(tt.key),
 			)
 
-			resp, err := agent.sendJSONRequest(context.Background(), tt.metricsUpdate)
+			resp, err := agent.sendUpdate(context.Background(), tt.metricsUpdate)
 
 			if tt.want.wantErr {
 				assert.Error(t, err)

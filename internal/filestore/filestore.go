@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -22,8 +21,6 @@ type FileStore struct {
 	*storage.Storage
 	ctx           context.Context
 	cancel        context.CancelFunc
-	file          *os.File
-	encoder       *json.Encoder
 	storeFile     string        // имя файла, где хранятся значения метрик (пустое значение — отключает функцию записи на диск)
 	storeInterval time.Duration // интервал периодического сохранения метрик на диск, 0 — делает запись синхронной
 	restore       bool
@@ -107,14 +104,6 @@ func (fs *FileStore) init() error {
 		log.Printf("[WARNING] Failed to restore metrics from file '%s' - %s\n", fs.storeFile, err)
 	}
 
-	file, err := os.OpenFile(fs.storeFile, os.O_WRONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return fmt.Errorf("failed to create new filestore - %s", err)
-	}
-
-	fs.file = file
-	fs.encoder = json.NewEncoder(file)
-
 	return nil
 }
 
@@ -136,7 +125,7 @@ func (fs *FileStore) restoreMetrics() error {
 		return nil
 	}
 
-	data, err := ioutil.ReadFile(fs.storeFile)
+	data, err := os.ReadFile(fs.storeFile)
 	if err != nil {
 		return fs.removeBrokenFile(err)
 	}
@@ -152,7 +141,7 @@ func (fs *FileStore) restoreMetrics() error {
 		return fs.removeBrokenFile(err)
 	}
 
-	err = fs.PutMetrics(context.Background(), metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
+	err = fs.Restore(context.Background(), metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
 	if err != nil {
 		return err
 	}
@@ -162,24 +151,20 @@ func (fs *FileStore) restoreMetrics() error {
 }
 
 func (fs *FileStore) writeMetrics() (int, error) {
-	mcs, _ := fs.GetMetrics(context.Background())
-	m := &metrics.ProxyMetrics{
-		Gauges:   mcs.Gauges,
-		Counters: mcs.Counters,
-	}
+	prm, _ := fs.GetMetrics(context.Background())
 
-	_, err := fs.file.Seek(0, 0)
+	data, err := json.Marshal(&prm)
 	if err != nil {
 		return 0, err
 	}
 
-	err = fs.encoder.Encode(&m)
+	err = os.WriteFile(fs.storeFile, data, 0777)
 	if err != nil {
 		return 0, err
 	}
 
-	log.Printf("written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(m.Gauges), len(m.Counters))
-	return len(m.Gauges) + len(m.Counters), nil
+	log.Printf("written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(prm.Gauges), len(prm.Counters))
+	return len(prm.Gauges) + len(prm.Counters), nil
 }
 
 func (fs *FileStore) WriteTicker() error {
@@ -229,11 +214,6 @@ func (fs *FileStore) Shutdown() error {
 	defer fs.cancel()
 
 	_, err := fs.writeMetrics()
-	if err != nil {
-		return err
-	}
-
-	err = fs.file.Close()
 	if err != nil {
 		return err
 	}

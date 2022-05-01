@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
@@ -15,6 +16,9 @@ func (s *Storage) Get(parentCtx context.Context, id string) (interface{}, error)
 	row := s.db.QueryRowContext(ctx, queryGet, id)
 	// разбираем результат
 	err := row.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
+	if err == sql.ErrNoRows {
+		log.Println(":: no rows found for request:", m)
+	}
 	if err != nil {
 		return nil, err
 	}

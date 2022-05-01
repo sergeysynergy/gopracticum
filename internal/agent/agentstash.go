@@ -3,7 +3,9 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/go-resty/resty/v2"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -39,4 +41,76 @@ func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key st
 		a.handleError(respErr)
 		return
 	}
+}
+
+func (a *Agent) sendUpdate(ctx context.Context, m *metrics.Metrics) (*resty.Response, error) {
+	endpoint := a.protocol + a.addr + "/update/"
+
+	resp, err := a.client.R().
+		SetHeader("Accept", "application/json").
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Type", "application/json").
+		SetContext(ctx).
+		SetBody(m).
+		Post(endpoint)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return resp, fmt.Errorf("invalid status code %v", resp.StatusCode())
+	}
+
+	return resp, nil
+}
+
+func (a *Agent) sendReportUpdate(ctx context.Context) {
+	mcs, err := a.storage.GetMetrics(ctx)
+	if err != nil {
+		a.handleError(err)
+		return
+	}
+
+	for k, v := range mcs.Gauges {
+		gauge := float64(v)
+		m := &metrics.Metrics{
+			ID:    k,
+			MType: "gauge",
+			Value: &gauge,
+		}
+
+		// добавляем хэш, если задан ключ key
+		if a.key != "" {
+			m.Hash = metrics.GaugeHash(a.key, m.ID, *m.Value)
+		}
+
+		_, err := a.sendUpdate(ctx, m)
+		if err != nil {
+			a.handleError(err)
+			return
+		}
+	}
+
+	for k, v := range mcs.Counters {
+		counter := int64(v)
+		m := &metrics.Metrics{
+			ID:    k,
+			MType: "counter",
+			Delta: &counter,
+		}
+
+		// добавляем хэш, если задан ключ key
+		if a.key != "" {
+			m.Hash = metrics.CounterHash(a.key, m.ID, *m.Delta)
+		}
+
+		_, err := a.sendUpdate(ctx, m)
+		if err != nil {
+			a.handleError(err)
+			return
+		}
+	}
+
+	log.Println("Выполнена отправка отчёта")
 }

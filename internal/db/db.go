@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
 	"time"
 
@@ -40,36 +41,50 @@ type metricsDB struct {
 }
 
 type Storage struct {
-	db  *sql.DB
-	dsn string
+	db     *sql.DB
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	stmtGaugeInsert   *sql.Stmt
+	stmtCounterInsert *sql.Stmt
+	stmtGaugeUpdate   *sql.Stmt
+	stmtCounterUpdate *sql.Stmt
+	stmtGaugeGet      *sql.Stmt
+	stmtCounterGet    *sql.Stmt
+	stmtAllUpdate     *sql.Stmt
+	stmtAllSelect     *sql.Stmt
 }
 
-type Options func(s *Storage)
-
-func New(dsn string, opts ...Options) storage.DBStorer {
+func New(dsn string) storage.DBStorer {
 	// вернём nil в случае пустой строки DSN
 	if dsn == "" {
 		return nil
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	s := &Storage{
-		dsn: dsn,
-	}
-	for _, opt := range opts {
-		opt(s)
+		ctx:    ctx,
+		cancel: cancel,
 	}
 
 	// проинициализируем подключение к БД
-	err := s.init()
+	err := s.init(dsn)
 	if err != nil {
 		log.Fatal("[FATAL] Database initialization failed - ", err)
+	}
+
+	// опишем стейтменты
+	err = s.initStatements()
+	if err != nil {
+		log.Fatal("[FATAL] Database statements initialization failed - ", err)
 	}
 
 	return s
 }
 
-func (s *Storage) init() error {
-	db, err := sql.Open("pgx", s.dsn)
+func (s *Storage) init(dsn string) error {
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return err
 	}
@@ -88,8 +103,70 @@ func (s *Storage) init() error {
 		log.Println("table `metrics` created")
 	}
 
-	return nil
+	db.SetMaxOpenConns(40)
+	db.SetMaxIdleConns(20)
+	db.SetConnMaxIdleTime(time.Second * 60)
 
+	return nil
+}
+
+func (s *Storage) initStatements() error {
+	var err error
+
+	s.stmtGaugeInsert, err = s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)")
+	if err != nil {
+		return err
+	}
+
+	s.stmtCounterInsert, err = s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)")
+	if err != nil {
+		return err
+	}
+
+	s.stmtGaugeUpdate, err = s.db.PrepareContext(s.ctx, "UPDATE metrics SET value = $2 WHERE id = $1")
+	if err != nil {
+		return err
+	}
+
+	s.stmtCounterUpdate, err = s.db.PrepareContext(s.ctx, "UPDATE metrics SET delta = $2 WHERE id = $1")
+	if err != nil {
+		return err
+	}
+
+	s.stmtGaugeGet, err = s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)")
+	if err != nil {
+		return err
+	}
+
+	s.stmtCounterGet, err = s.db.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
+	if err != nil {
+		return err
+	}
+
+	s.stmtAllUpdate, err = s.db.PrepareContext(s.ctx, "UPDATE metrics SET delta=$2, value=$3 WHERE id = $1")
+	if err != nil {
+		return err
+	}
+
+	s.stmtAllSelect, err = s.db.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Storage) closeStatements() error {
+	s.stmtGaugeInsert.Close()
+	s.stmtCounterInsert.Close()
+	s.stmtGaugeUpdate.Close()
+	s.stmtCounterUpdate.Close()
+	s.stmtGaugeGet.Close()
+	s.stmtCounterGet.Close()
+	s.stmtAllUpdate.Close()
+	s.stmtAllSelect.Close()
+
+	return nil
 }
 
 func (s *Storage) Ping() error {
@@ -104,6 +181,9 @@ func (s *Storage) Ping() error {
 }
 
 func (s *Storage) Shutdown() error {
+	s.cancel()
+	s.closeStatements()
+
 	err := s.db.Close()
 	if err != nil {
 		return err
@@ -111,4 +191,28 @@ func (s *Storage) Shutdown() error {
 
 	log.Println("connection to database closed")
 	return nil
+}
+
+// получим текущее значение счётчика
+func (s *Storage) checkCounter(id string) (metrics.Counter, error) {
+	mdb := metricsDB{}
+	row := s.stmtCounterGet.QueryRowContext(s.ctx, id)
+
+	err := row.Scan(&mdb.ID, &mdb.MType, &mdb.Value, &mdb.Delta)
+	if err == sql.ErrNoRows {
+		_, err = s.stmtCounterInsert.ExecContext(s.ctx, id, 0)
+		if err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return metrics.Counter(mdb.Delta.Int64), nil
+}
+
+func (s *Storage) GetHashedMetrics(_ string) []metrics.Metrics {
+	return []metrics.Metrics{}
 }

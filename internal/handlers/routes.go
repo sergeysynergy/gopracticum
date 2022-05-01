@@ -12,6 +12,7 @@ func (h *Handler) setRoutes() {
 
 	// обработчики для JSON API
 	h.router.Post("/update/", h.Update)
+	h.router.Post("/updates/", h.Updates)
 	h.router.Post("/value/", h.Value)
 
 	// обработчики для работы с базой данных
