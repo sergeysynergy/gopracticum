@@ -113,7 +113,7 @@ func (a *Agent) pollHandler(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			a.Update(ctx)
+			a.Update()
 		case <-ctx.Done():
 			log.Println("Штатное завершение работы обновления метрик")
 			ticker.Stop()
@@ -141,7 +141,7 @@ func (a *Agent) reportHandler(ctx context.Context) {
 func (a *Agent) sendReportUpdates(ctx context.Context) {
 	hm := make([]metrics.Metrics, 0, metrics.TypeGaugeLen+metrics.TypeCounterLen)
 
-	prm, err := a.storage.GetMetrics(ctx)
+	prm, err := a.storage.GetMetrics()
 	if err != nil {
 		a.handleError(err)
 		return
@@ -199,7 +199,7 @@ func (a *Agent) handleError(err error) {
 	log.Println("Ошибка -", err)
 }
 
-func (a *Agent) Update(ctx context.Context) {
+func (a *Agent) Update() {
 	ms := &runtime.MemStats{}
 	runtime.ReadMemStats(ms)
 
@@ -239,7 +239,7 @@ func (a *Agent) Update(ctx context.Context) {
 
 	prm.Counters[metrics.PollCount] = 1
 
-	err := a.storage.PutMetrics(ctx, prm)
+	err := a.storage.PutMetrics(prm)
 	if err != nil {
 		a.handleError(err)
 	}

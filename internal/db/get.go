@@ -1,24 +1,19 @@
 package db
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
 )
 
-func (s *Storage) Get(parentCtx context.Context, id string) (interface{}, error) {
-	ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
-	defer cancel()
+func (s *Storage) Get(id string) (interface{}, error) {
+	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
+	//defer cancel()
 
 	m := metricsDB{}
-	row := s.db.QueryRowContext(ctx, queryGet, id)
+	row := s.db.QueryRowContext(s.ctx, queryGet, id)
 	// разбираем результат
 	err := row.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
-	if err == sql.ErrNoRows {
-		log.Println(":: no rows found for request:", m)
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -40,13 +35,13 @@ func (s *Storage) Get(parentCtx context.Context, id string) (interface{}, error)
 	return nil, fmt.Errorf("metric not implemented")
 }
 
-func (s *Storage) GetMetrics(parentCtx context.Context) (metrics.ProxyMetrics, error) {
+func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 	mcs := metrics.NewProxyMetrics()
 
-	ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
+	//defer cancel()
 
-	rows, err := s.db.QueryContext(ctx, queryGetMetrics)
+	rows, err := s.db.QueryContext(s.ctx, queryGetMetrics)
 	if err != nil {
 		return mcs, err
 	}

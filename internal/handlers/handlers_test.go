@@ -90,7 +90,7 @@ func TestGet(t *testing.T) {
 	}{
 		{
 			name: "Gauge ok",
-			handler: New(WithFileStorer(filestore.New(filestore.WithStorage(
+			handler: New(WithFileStorer(filestore.New(filestore.WithStorer(
 				storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
 			)))),
 			request: "/value/gauge/Alloc",
@@ -110,7 +110,7 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name: "Counter ok",
-			handler: New(WithFileStorer(filestore.New(filestore.WithStorage(
+			handler: New(WithFileStorer(filestore.New(filestore.WithStorer(
 				storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
 			)))),
 			request: "/value/counter/PollCount",

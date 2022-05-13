@@ -49,7 +49,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = h.storer.Put(r.Context(), m.ID, metrics.Gauge(*m.Value))
+		err = h.storer.Put(m.ID, metrics.Gauge(*m.Value))
 		if err != nil {
 			h.errorJSON(w, err.Error(), http.StatusBadRequest)
 			return
@@ -67,7 +67,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = h.storer.Put(r.Context(), m.ID, metrics.Counter(*m.Delta))
+		err = h.storer.Put(m.ID, metrics.Counter(*m.Delta))
 		if err != nil {
 			h.errorJSON(w, err.Error(), http.StatusBadRequest)
 			return

@@ -1,12 +1,10 @@
 package storage
 
 import (
-	"context"
-
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
-func (s *Storage) Restore(_ context.Context, m metrics.ProxyMetrics) error {
+func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 	// для удобства вызова PutMetrics проиницилизируем нулевой хэш Gauges
 	if m.Gauges == nil {
 		m.Gauges = make(map[string]metrics.Gauge)

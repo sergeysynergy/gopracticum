@@ -24,7 +24,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = h.storer.Put(r.Context(), name, gauge)
+		err = h.storer.Put(name, gauge)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -37,7 +37,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
-		err = h.storer.Put(r.Context(), name, counter)
+		err = h.storer.Put(name, counter)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -58,7 +58,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	switch metricType {
 	case "gauge":
-		value, err := h.storer.Get(r.Context(), name)
+		value, err := h.storer.Get(name)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -66,7 +66,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		gauge := value.(metrics.Gauge)
 		val = strconv.FormatFloat(float64(gauge), 'f', -1, 64)
 	case "counter":
-		counter, err := h.storer.Get(r.Context(), name)
+		counter, err := h.storer.Get(name)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

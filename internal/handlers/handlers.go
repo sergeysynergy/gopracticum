@@ -96,7 +96,7 @@ func (h *Handler) GetRouter() chi.Router {
 	return h.router
 }
 
-func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) List(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("content-type", textHTML)
 	w.WriteHeader(http.StatusOK)
 
@@ -108,7 +108,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		value float64
 	}
 
-	mcs, err := h.storer.GetMetrics(r.Context())
+	mcs, err := h.storer.GetMetrics()
 	if err != nil {
 		h.errorJSON(w, err.Error(), http.StatusBadRequest)
 		return

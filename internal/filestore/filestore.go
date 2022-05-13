@@ -18,7 +18,7 @@ var (
 )
 
 type FileStore struct {
-	*storage.Storage
+	storage.Storer
 	ctx           context.Context
 	cancel        context.CancelFunc
 	storeFile     string        // имя файла, где хранятся значения метрик (пустое значение — отключает функцию записи на диск)
@@ -56,9 +56,9 @@ func New(opts ...Options) storage.FileStorer {
 		return nil
 	}
 
-	// создаём Storage, если он не был проинициализирован через WithStorage
-	if fs.Storage == nil {
-		fs.Storage = storage.New()
+	// создаём Storer, если он не был проинициализирован через WithStorer
+	if fs.Storer == nil {
+		fs.Storer = storage.New()
 	}
 
 	// проинициализируем файловое хранилище
@@ -70,9 +70,11 @@ func New(opts ...Options) storage.FileStorer {
 	return fs
 }
 
-func WithStorage(st *storage.Storage) Options {
+func WithStorer(st storage.Storer) Options {
 	return func(fs *FileStore) {
-		fs.Storage = st
+		if st != nil {
+			fs.Storer = st
+		}
 	}
 }
 
@@ -141,7 +143,7 @@ func (fs *FileStore) restoreMetrics() error {
 		return fs.removeBrokenFile(err)
 	}
 
-	err = fs.Restore(context.Background(), metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
+	err = fs.Restore(metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
 	if err != nil {
 		return err
 	}
@@ -151,7 +153,7 @@ func (fs *FileStore) restoreMetrics() error {
 }
 
 func (fs *FileStore) writeMetrics() (int, error) {
-	prm, _ := fs.GetMetrics(context.Background())
+	prm, _ := fs.GetMetrics()
 
 	data, err := json.Marshal(&prm)
 	if err != nil {

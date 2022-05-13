@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -34,9 +35,10 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		h.errorJSON(w, "Metric type needed", http.StatusBadRequest)
 		return
 	case "gauge":
-		gauge, errGet := h.storer.Get(r.Context(), m.ID)
+		gauge, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
-			h.errorJSON(w, errGet.Error(), http.StatusNotFound)
+			msg := fmt.Sprintf("%s; type: gauge; id: %s", errGet, m.ID)
+			h.errorJSON(w, msg, http.StatusNotFound)
 			return
 		}
 		value := float64(gauge.(metrics.Gauge))
@@ -47,9 +49,10 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 			m.Hash = metrics.GaugeHash(h.key, m.ID, *m.Value)
 		}
 	case "counter":
-		counter, errGet := h.storer.Get(r.Context(), m.ID)
+		counter, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
-			h.errorJSON(w, errGet.Error(), http.StatusNotFound)
+			msg := fmt.Sprintf("%s; type: counter; id: %s", errGet, m.ID)
+			h.errorJSON(w, msg, http.StatusNotFound)
 			return
 		}
 		delta := int64(counter.(metrics.Counter))

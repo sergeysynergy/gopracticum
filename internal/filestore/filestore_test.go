@@ -1,7 +1,6 @@
 package filestore
 
 import (
-	"context"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -80,7 +79,7 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 			)
 			if !tt.want.wantErr {
 				assert.NoError(t, err)
-				mcs, _ := fs.GetMetrics(context.Background())
+				mcs, _ := fs.GetMetrics()
 				assert.Equal(t, tt.want.body, mcs)
 			}
 		})

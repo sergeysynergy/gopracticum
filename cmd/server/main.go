@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/caarlos0/env/v6"
-	"github.com/sergeysynergy/gopracticum/internal/storage"
 	"log"
 	"time"
 
@@ -38,19 +37,16 @@ func main() {
 	}
 	log.Printf("Receive config: %#v\n", cfg)
 
-	// создадим общий Storage
-	st := storage.New()
+	// создадим хранилище с использование базы данных на базе Storage
+	dbStorer := db.New(cfg.DatabaseDSN)
 
 	// создадим файловое хранилище на базе Storage
 	fileStorer := filestore.New(
-		filestore.WithStorage(st),
+		filestore.WithStorer(dbStorer),
 		filestore.WithStoreFile(cfg.StoreFile),
 		filestore.WithRestore(cfg.Restore),
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
-
-	// создадим хранилище с использование базы данных на базе Storage
-	dbStorer := db.New(cfg.DatabaseDSN)
 
 	// подключим обработчики запросов, которые используют storage и fileStore
 	h := handlers.New(

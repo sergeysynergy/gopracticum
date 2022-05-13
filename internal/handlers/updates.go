@@ -16,7 +16,7 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respBody, err := ioutil.ReadAll(r.Body)
+	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		h.errorJSONReadBodyFailed(w, err)
 		return
@@ -24,7 +24,7 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	mcs := make([]metrics.Metrics, 0)
-	err = json.Unmarshal(respBody, &mcs)
+	err = json.Unmarshal(reqBody, &mcs)
 	if err != nil {
 		h.errorJSONUnmarshalFailed(w, err)
 		return
@@ -70,7 +70,7 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = h.storer.PutMetrics(r.Context(), prm)
+	err = h.storer.PutMetrics(prm)
 	if err != nil {
 		h.errorJSON(w, err.Error(), http.StatusBadRequest)
 		return

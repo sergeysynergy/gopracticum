@@ -1,19 +1,18 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
 )
 
-func (s *Storage) Put(parentCtx context.Context, id string, val interface{}) error {
-	ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
-	defer cancel()
+func (s *Storage) Put(id string, val interface{}) error {
+	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
+	//defer cancel()
 
 	switch m := val.(type) {
 	case metrics.Gauge:
-		result, err := s.db.ExecContext(ctx, queryUpdateGauge, id, m)
+		result, err := s.db.ExecContext(s.ctx, queryUpdateGauge, id, m)
 		if err != nil {
 			return err
 		}
@@ -23,7 +22,7 @@ func (s *Storage) Put(parentCtx context.Context, id string, val interface{}) err
 			return err
 		}
 		if rows == 0 {
-			_, err = s.db.ExecContext(ctx, queryInsertGauge, id, m)
+			_, err = s.db.ExecContext(s.ctx, queryInsertGauge, id, m)
 			if err != nil {
 				return err
 			}
@@ -35,7 +34,7 @@ func (s *Storage) Put(parentCtx context.Context, id string, val interface{}) err
 			return err
 		}
 		// запишим увеличенное значение
-		if _, err = s.stmtCounterUpdate.ExecContext(ctx, id, m+v); err != nil {
+		if _, err = s.stmtCounterUpdate.ExecContext(s.ctx, id, m+v); err != nil {
 			return err
 		}
 	default:
@@ -45,18 +44,18 @@ func (s *Storage) Put(parentCtx context.Context, id string, val interface{}) err
 	return nil
 }
 
-func (s *Storage) PutMetrics(ctx context.Context, m metrics.ProxyMetrics) error {
+func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	txGaugeUpdate := tx.StmtContext(ctx, s.stmtGaugeUpdate)
-	txCounterUpdate := tx.StmtContext(ctx, s.stmtCounterUpdate)
-	txGaugeInsert := tx.StmtContext(ctx, s.stmtGaugeInsert)
-	txCounterInsert := tx.StmtContext(ctx, s.stmtCounterInsert)
-	txCounterGet := tx.StmtContext(ctx, s.stmtCounterGet)
+	txGaugeUpdate := tx.StmtContext(s.ctx, s.stmtGaugeUpdate)
+	txCounterUpdate := tx.StmtContext(s.ctx, s.stmtCounterUpdate)
+	txGaugeInsert := tx.StmtContext(s.ctx, s.stmtGaugeInsert)
+	txCounterInsert := tx.StmtContext(s.ctx, s.stmtCounterInsert)
+	txCounterGet := tx.StmtContext(s.ctx, s.stmtCounterGet)
 
 	if m.Gauges != nil {
 		for id, value := range m.Gauges {
@@ -69,7 +68,7 @@ func (s *Storage) PutMetrics(ctx context.Context, m metrics.ProxyMetrics) error 
 				return err
 			}
 			if count == 0 {
-				_, err := txGaugeInsert.ExecContext(ctx, id, value)
+				_, err := txGaugeInsert.ExecContext(s.ctx, id, value)
 				if err != nil {
 					return err
 				}
@@ -84,18 +83,23 @@ func (s *Storage) PutMetrics(ctx context.Context, m metrics.ProxyMetrics) error 
 			row := txCounterGet.QueryRowContext(s.ctx, id)
 			err = row.Scan(&mdb.ID, &mdb.MType, &mdb.Value, &mdb.Delta)
 			if err == sql.ErrNoRows {
+				// добавим новую запись в случае отсутствия результата
 				_, err = txCounterInsert.ExecContext(s.ctx, id, delta)
 				if err != nil {
 					return err
 				}
+				continue
 			}
 			if err != nil {
 				return err
 			}
 
 			// запишим увеличенное значение
-			v := metrics.Counter(mdb.Delta.Int64)
-			if _, err = txCounterUpdate.ExecContext(ctx, id, delta+v); err != nil {
+			v := metrics.Counter(0)
+			if mdb.Delta.Valid {
+				v = metrics.Counter(mdb.Delta.Int64)
+			}
+			if _, err = txCounterUpdate.ExecContext(s.ctx, id, delta+v); err != nil {
 				return err
 			}
 		}

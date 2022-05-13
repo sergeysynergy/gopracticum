@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	initTimeOut  = 2 * time.Second
-	queryTimeOut = 1 * time.Second
+	initTimeOut = 60 * time.Second
+	//queryTimeOut = 60 * time.Second
 
 	queryCreateTable = `
 		CREATE TABLE public.metrics (
@@ -25,12 +25,12 @@ const (
 			PRIMARY KEY (id)
 		);
 	`
-	queryInsertGauge   = `INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)`
-	queryInsertCounter = `INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)`
-	queryUpdateGauge   = `UPDATE metrics SET value = $2 WHERE id = $1`
-	queryUpdateCounter = `UPDATE metrics SET delta = $2 WHERE id = $1`
-	queryGet           = `SELECT id, type, value, delta FROM metrics WHERE id=$1`
-	queryGetMetrics    = `SELECT id, type, value, delta FROM metrics`
+	queryInsertGauge = `INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)`
+	//queryInsertCounter = `INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)`
+	queryUpdateGauge = `UPDATE metrics SET value = $2 WHERE id = $1`
+	//queryUpdateCounter = `UPDATE metrics SET delta = $2 WHERE id = $1`
+	queryGet        = `SELECT id, type, value, delta FROM metrics WHERE id=$1`
+	queryGetMetrics = `SELECT id, type, value, delta FROM metrics`
 )
 
 type metricsDB struct {
@@ -157,14 +157,45 @@ func (s *Storage) initStatements() error {
 }
 
 func (s *Storage) closeStatements() error {
-	s.stmtGaugeInsert.Close()
-	s.stmtCounterInsert.Close()
-	s.stmtGaugeUpdate.Close()
-	s.stmtCounterUpdate.Close()
-	s.stmtGaugeGet.Close()
-	s.stmtCounterGet.Close()
-	s.stmtAllUpdate.Close()
-	s.stmtAllSelect.Close()
+	err := s.stmtGaugeInsert.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtCounterInsert.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtGaugeUpdate.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtCounterUpdate.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtGaugeGet.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtCounterGet.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtAllUpdate.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtAllSelect.Close()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -182,9 +213,13 @@ func (s *Storage) Ping() error {
 
 func (s *Storage) Shutdown() error {
 	s.cancel()
-	s.closeStatements()
 
-	err := s.db.Close()
+	err := s.closeStatements()
+	if err != nil {
+		return err
+	}
+
+	err = s.db.Close()
 	if err != nil {
 		return err
 	}
@@ -211,8 +246,4 @@ func (s *Storage) checkCounter(id string) (metrics.Counter, error) {
 	}
 
 	return metrics.Counter(mdb.Delta.Int64), nil
-}
-
-func (s *Storage) GetHashedMetrics(_ string) []metrics.Metrics {
-	return []metrics.Metrics{}
 }

@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -43,17 +42,16 @@ func TestStoragePut(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
 			var err error
 			s := New()
 
 			switch tt.mType {
 			case "gauge":
-				err = s.Put(ctx, tt.ID, tt.value)
+				err = s.Put(tt.ID, tt.value)
 			case "counter":
-				err = s.Put(ctx, tt.ID, tt.delta)
+				err = s.Put(tt.ID, tt.delta)
 			default:
-				err = s.Put(ctx, tt.ID, "unknown metric")
+				err = s.Put(tt.ID, "unknown metric")
 			}
 
 			if tt.want.wantErr {
@@ -105,14 +103,13 @@ func TestStorageGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
 			var err error
 			s := New(
 				WithGauges(map[string]metrics.Gauge{metrics.Alloc: 1234.42}),
 				WithCounters(map[string]metrics.Counter{metrics.PollCount: 42}),
 			)
 
-			val, err := s.Get(ctx, tt.ID)
+			val, err := s.Get(tt.ID)
 			switch m := val.(type) {
 			case metrics.Gauge:
 				assert.NoError(t, err)
@@ -192,13 +189,12 @@ func TestStoragePutGetMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
 			s := New()
 
-			err := s.PutMetrics(ctx, tt.put)
+			err := s.PutMetrics(tt.put)
 			assert.NoError(t, err)
 
-			result, err := s.GetMetrics(ctx)
+			result, err := s.GetMetrics()
 			assert.NoError(t, err)
 			assert.EqualValues(t, tt.put, result)
 		})

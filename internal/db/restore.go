@@ -1,22 +1,21 @@
 package db
 
 import (
-	"context"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
 )
 
-func (s *Storage) Restore(ctx context.Context, m metrics.ProxyMetrics) error {
+func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	txGaugeUpdate := tx.StmtContext(ctx, s.stmtGaugeUpdate)
-	txCounterUpdate := tx.StmtContext(ctx, s.stmtCounterUpdate)
-	txGaugeInsert := tx.StmtContext(ctx, s.stmtGaugeInsert)
-	txCounterInsert := tx.StmtContext(ctx, s.stmtCounterInsert)
+	txGaugeUpdate := tx.StmtContext(s.ctx, s.stmtGaugeUpdate)
+	txCounterUpdate := tx.StmtContext(s.ctx, s.stmtCounterUpdate)
+	txGaugeInsert := tx.StmtContext(s.ctx, s.stmtGaugeInsert)
+	txCounterInsert := tx.StmtContext(s.ctx, s.stmtCounterInsert)
 
 	// запишем значения gauge
 	if m.Gauges != nil {
@@ -30,7 +29,7 @@ func (s *Storage) Restore(ctx context.Context, m metrics.ProxyMetrics) error {
 				return err
 			}
 			if count == 0 {
-				_, err := txGaugeInsert.ExecContext(ctx, id, value)
+				_, err := txGaugeInsert.ExecContext(s.ctx, id, value)
 				if err != nil {
 					return err
 				}
@@ -50,7 +49,7 @@ func (s *Storage) Restore(ctx context.Context, m metrics.ProxyMetrics) error {
 				return err
 			}
 			if count == 0 {
-				_, err := txCounterInsert.ExecContext(ctx, id, delta)
+				_, err := txCounterInsert.ExecContext(s.ctx, id, delta)
 				if err != nil {
 					return err
 				}

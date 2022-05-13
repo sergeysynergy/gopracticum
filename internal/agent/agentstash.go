@@ -66,7 +66,7 @@ func (a *Agent) sendUpdate(ctx context.Context, m *metrics.Metrics) (*resty.Resp
 }
 
 func (a *Agent) sendReportUpdate(ctx context.Context) {
-	mcs, err := a.storage.GetMetrics(ctx)
+	mcs, err := a.storage.GetMetrics()
 	if err != nil {
 		a.handleError(err)
 		return
