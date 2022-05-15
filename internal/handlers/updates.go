@@ -71,7 +71,13 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			prm.Counters[m.ID] = metrics.Counter(*m.Delta)
+			// проверяем и суммируем дублирующие значения
+			v, ok := prm.Counters[m.ID]
+			if !ok {
+				prm.Counters[m.ID] = metrics.Counter(*m.Delta)
+			} else {
+				prm.Counters[m.ID] = v + metrics.Counter(*m.Delta)
+			}
 		default:
 			err = fmt.Errorf("not implemented")
 			h.errorJSON(w, r, err.Error(), http.StatusNotImplemented)
