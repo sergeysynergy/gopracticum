@@ -143,6 +143,8 @@ func (fs *FileStore) restoreMetrics() error {
 		return fs.removeBrokenFile(err)
 	}
 
+	log.Println("Read metrics from file:", string(data))
+
 	err = fs.Restore(metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
 	if err != nil {
 		return err

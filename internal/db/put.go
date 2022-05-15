@@ -7,9 +7,6 @@ import (
 )
 
 func (s *Storage) Put(id string, val interface{}) error {
-	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
-	//defer cancel()
-
 	switch m := val.(type) {
 	case metrics.Gauge:
 		result, err := s.db.ExecContext(s.ctx, queryUpdateGauge, id, m)
@@ -80,10 +77,12 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 		for id, delta := range m.Counters {
 			// получим текущее значение счётчика
 			mdb := metricsDB{}
+			// s.db.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
 			row := txCounterGet.QueryRowContext(s.ctx, id)
 			err = row.Scan(&mdb.ID, &mdb.MType, &mdb.Value, &mdb.Delta)
 			if err == sql.ErrNoRows {
 				// добавим новую запись в случае отсутствия результата
+				// s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)")
 				_, err = txCounterInsert.ExecContext(s.ctx, id, delta)
 				if err != nil {
 					return err
@@ -99,7 +98,9 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 			if mdb.Delta.Valid {
 				v = metrics.Counter(mdb.Delta.Int64)
 			}
-			if _, err = txCounterUpdate.ExecContext(s.ctx, id, delta+v); err != nil {
+			hm := delta + v
+			// s.db.PrepareContext(s.ctx, "UPDATE metrics SET delta = $2 WHERE id = $1")
+			if _, err = txCounterUpdate.ExecContext(s.ctx, id, hm); err != nil {
 				return err
 			}
 		}

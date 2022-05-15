@@ -14,13 +14,13 @@ import (
 func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
 	if ct != applicationJSON {
-		h.errorJSONUnsupportedMediaType(w)
+		h.errorJSONUnsupportedMediaType(w, r)
 		return
 	}
 
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		h.errorJSONReadBodyFailed(w, err)
+		h.errorJSONReadBodyFailed(w, r, err)
 		return
 	}
 	defer r.Body.Close()
@@ -28,19 +28,19 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	m := metrics.Metrics{}
 	err = json.Unmarshal(reqBody, &m)
 	if err != nil {
-		h.errorJSONUnmarshalFailed(w, err)
+		h.errorJSONUnmarshalFailed(w, r, err)
 		return
 	}
 
 	switch m.MType {
 	case "":
-		h.errorJSON(w, "Metric type needed", http.StatusBadRequest)
+		h.errorJSON(w, r, "Metric type needed", http.StatusBadRequest)
 		return
 	case "gauge":
 		gauge, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
 			msg := fmt.Sprintf("%s; type: gauge; id: %s", errGet, m.ID)
-			h.errorJSON(w, msg, http.StatusNotFound)
+			h.errorJSON(w, r, msg, http.StatusNotFound)
 			return
 		}
 		value := float64(gauge.(metrics.Gauge))
@@ -54,7 +54,7 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		counter, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
 			msg := fmt.Sprintf("%s; type: counter; id: %s", errGet, m.ID)
-			h.errorJSON(w, msg, http.StatusNotFound)
+			h.errorJSON(w, r, msg, http.StatusNotFound)
 			return
 		}
 		delta := int64(counter.(metrics.Counter))
@@ -65,13 +65,13 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 			m.Hash = metrics.CounterHash(h.key, m.ID, *m.Delta)
 		}
 	default:
-		h.errorJSON(w, "Given metric type not implemented", http.StatusNotImplemented)
+		h.errorJSON(w, r, "Given metric type not implemented", http.StatusNotImplemented)
 		return
 	}
 
 	body, err := json.Marshal(&m)
 	if err != nil {
-		h.errorJSONMarshalFailed(w, err)
+		h.errorJSONMarshalFailed(w, r, err)
 		return
 	}
 
