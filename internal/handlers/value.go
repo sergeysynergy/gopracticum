@@ -74,6 +74,6 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", applicationJSON)
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
