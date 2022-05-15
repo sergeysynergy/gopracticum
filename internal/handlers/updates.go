@@ -3,13 +3,21 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5/middleware"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
 func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
+	prefix := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
+	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+		prefix = fmt.Sprintf("[%s] \"POST http://%s/value/\"", reqID, r.Host)
+	}
+	log.Printf("%s bulk updates metrics", prefix)
+
 	ct := r.Header.Get("Content-Type")
 	if ct != applicationJSON {
 		h.errorJSONUnsupportedMediaType(w, r)
@@ -29,6 +37,7 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		h.errorJSONUnmarshalFailed(w, r, err)
 		return
 	}
+	log.Printf("%s total metrics to update %d", prefix, len(mcs))
 
 	prm := metrics.NewProxyMetrics()
 	for _, m := range mcs {
