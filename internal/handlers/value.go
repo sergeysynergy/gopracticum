@@ -82,9 +82,9 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
 		switch m.MType {
 		case "gauge":
-			log.Printf("[%s] \"POST http://%s/value/\" type - gauge; id - %s; value - %d", reqID, r.Host, m.ID, m.Value)
+			log.Printf("[%s] \"POST http://%s/value/\" responce body: %s", reqID, r.Host, body)
 		case "counter":
-			log.Printf("[%s] \"POST http://%s/value/\" type - counter; id - %s; delta - %d", reqID, r.Host, m.ID, m.Delta)
+			log.Printf("[%s] \"POST http://%s/value/\" responce body: %s", reqID, r.Host, body)
 		default:
 		}
 	}
