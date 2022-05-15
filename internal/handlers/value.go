@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5/middleware"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
@@ -74,6 +76,16 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", applicationJSON)
-	//w.WriteHeader(http.StatusOK)
 	w.Write(body)
+
+	// добавим вывод запрошенных значений в лог
+	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+		switch m.MType {
+		case "gauge":
+			log.Printf("[%s] \"POST http://%s/value/\" type - gauge; id - %s; value - %d", reqID, r.Host, m.ID, m.Value)
+		case "counter":
+			log.Printf("[%s] \"POST http://%s/value/\" type - counter; id - %s; delta - %d", reqID, r.Host, m.ID, m.Delta)
+		default:
+		}
+	}
 }
