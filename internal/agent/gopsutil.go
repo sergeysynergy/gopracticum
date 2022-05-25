@@ -3,9 +3,9 @@ package agent
 import (
 	"context"
 	"fmt"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
@@ -30,11 +30,11 @@ func (a *Agent) gopsutilUpdate() {
 	prm := metrics.NewProxyMetrics()
 	gauges := make(map[string]metrics.Gauge, 3)
 
-	c, err := cpu.Counts(true)
-	if err != nil {
-		a.handleError(fmt.Errorf("ошибка получения метрик посредством пакета `gopsutil` - %w", err))
-	}
-	//c := rand.Intn(12)
+	//c, err := cpu.Counts(true)
+	//if err != nil {
+	//	a.handleError(fmt.Errorf("ошибка получения метрик посредством пакета `gopsutil` - %w", err))
+	//}
+	c := rand.Intn(12)
 	gauges[metrics.CPUutilization1] = metrics.Gauge(c)
 
 	v, err := mem.VirtualMemory()
