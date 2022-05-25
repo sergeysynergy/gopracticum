@@ -38,15 +38,21 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 	}
 
 	s.gaugesMu.Lock()
-	s.gauges = m.Gauges
+	for key, value := range m.Gauges {
+		s.gauges[key] = value
+	}
 	s.gaugesMu.Unlock()
 
-	for k, v := range m.Counters {
-		err := s.Put(k, v)
-		if err != nil {
-			return err
+	s.countersMu.Lock()
+	for key, delta := range m.Counters {
+		_, ok := s.counters[key]
+		if !ok {
+			s.counters[key] = delta
+		} else {
+			s.counters[key] += delta
 		}
 	}
+	s.countersMu.Unlock()
 
 	return nil
 }

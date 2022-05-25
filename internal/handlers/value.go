@@ -12,11 +12,8 @@ import (
 )
 
 func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
-	prefix := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
-	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
-		prefix = fmt.Sprintf("[%s] \"POST http://%s/value/\"", reqID, r.Host)
-	}
-	log.Printf("%s requesting metrics", prefix)
+	url := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
+	prefix := fmt.Sprintf("[%s]", middleware.GetReqID(r.Context()))
 
 	ct := r.Header.Get("Content-Type")
 	if ct != applicationJSON {
@@ -30,7 +27,7 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	log.Printf("%s request body: %s", prefix, string(reqBody))
+	log.Printf("%s [DEBUG] %s request body: %s", prefix, url, string(reqBody))
 
 	m := metrics.Metrics{}
 	err = json.Unmarshal(reqBody, &m)
@@ -88,10 +85,10 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	// добавим вывод запрошенных значений в лог
 	switch m.MType {
 	case "gauge":
-		log.Printf("%s responce body: %s", prefix, body)
+		log.Printf("%s [DEBUG] %s responce body: %s", prefix, url, body)
 	case "counter":
-		log.Printf("%s responce body: %s", prefix, body)
+		log.Printf("%s [DEBUG] %s responce body: %s", prefix, url, body)
 	default:
-		log.Printf("%s unknown metrics type", prefix)
+		log.Printf("%s [DEBUG] %s unknown metrics type", prefix, url)
 	}
 }

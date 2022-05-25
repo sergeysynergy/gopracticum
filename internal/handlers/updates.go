@@ -12,11 +12,9 @@ import (
 )
 
 func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
-	prefix := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
-	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
-		prefix = fmt.Sprintf("[%s] \"POST http://%s/value/\"", reqID, r.Host)
-	}
-	log.Printf("%s bulk updates metrics", prefix)
+	url := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
+	prefix := fmt.Sprintf("[%s]", middleware.GetReqID(r.Context()))
+	log.Printf("%s [DEBUG] %s bulk updates metrics", prefix, url)
 
 	ct := r.Header.Get("Content-Type")
 	if ct != applicationJSON {
@@ -37,7 +35,7 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		h.errorJSONUnmarshalFailed(w, r, err)
 		return
 	}
-	log.Printf("%s total metrics to update %d", prefix, len(mcs))
+	log.Printf("%s [DEBUG] %s total metrics to update %d", prefix, url, len(mcs))
 
 	prm := metrics.NewProxyMetrics()
 	for _, m := range mcs {
@@ -54,6 +52,9 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 					h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 					return
 				}
+			}
+			if m.ID == "CPUutilization1" {
+				log.Println("Updates CPUutilization1:", *m.Value)
 			}
 
 			prm.Gauges[m.ID] = metrics.Gauge(*m.Value)
@@ -90,6 +91,4 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

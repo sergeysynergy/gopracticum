@@ -12,69 +12,75 @@ import (
 const (
 	TypeGauge      = "gauge"
 	TypeCounter    = "counter"
-	TypeGaugeLen   = 28
+	TypeGaugeLen   = 31
 	TypeCounterLen = 1
 
-	Alloc         = "Alloc"
-	BuckHashSys   = "BuckHashSys"
-	Frees         = "Frees"
-	GCCPUFraction = "GCCPUFraction"
-	GCSys         = "GCSys"
-	HeapAlloc     = "HeapAlloc"
-	HeapIdle      = "HeapIdle"
-	HeapInuse     = "HeapInuse"
-	HeapObjects   = "HeapObjects"
-	HeapReleased  = "HeapReleased"
-	HeapSys       = "HeapSys"
-	LastGC        = "LastGC"
-	Lookups       = "Lookups"
-	MCacheInuse   = "MCacheInuse"
-	MCacheSys     = "MCacheSys"
-	MSpanInuse    = "MSpanInuse"
-	MSpanSys      = "MSpanSys"
-	Mallocs       = "Mallocs"
-	NextGC        = "NextGC"
-	NumForcedGC   = "NumForcedGC"
-	NumGC         = "NumGC"
-	OtherSys      = "OtherSys"
-	PauseTotalNs  = "PauseTotalNs"
-	StackInuse    = "StackInuse"
-	StackSys      = "StackSys"
-	Sys           = "Sys"
-	TotalAlloc    = "TotalAlloc"
-	RandomValue   = "RandomValue"
-	PollCount     = "PollCount"
+	Alloc           = "Alloc"
+	BuckHashSys     = "BuckHashSys"
+	Frees           = "Frees"
+	GCCPUFraction   = "GCCPUFraction"
+	GCSys           = "GCSys"
+	HeapAlloc       = "HeapAlloc"
+	HeapIdle        = "HeapIdle"
+	HeapInuse       = "HeapInuse"
+	HeapObjects     = "HeapObjects"
+	HeapReleased    = "HeapReleased"
+	HeapSys         = "HeapSys"
+	LastGC          = "LastGC"
+	Lookups         = "Lookups"
+	MCacheInuse     = "MCacheInuse"
+	MCacheSys       = "MCacheSys"
+	MSpanInuse      = "MSpanInuse"
+	MSpanSys        = "MSpanSys"
+	Mallocs         = "Mallocs"
+	NextGC          = "NextGC"
+	NumForcedGC     = "NumForcedGC"
+	NumGC           = "NumGC"
+	OtherSys        = "OtherSys"
+	PauseTotalNs    = "PauseTotalNs"
+	StackInuse      = "StackInuse"
+	StackSys        = "StackSys"
+	Sys             = "Sys"
+	TotalAlloc      = "TotalAlloc"
+	RandomValue     = "RandomValue"
+	PollCount       = "PollCount"
+	TotalMemory     = "TotalMemory"
+	FreeMemory      = "FreeMemory"
+	CPUutilization1 = "CPUutilization1"
 )
 
 var Gauges = map[string]bool{
-	Alloc:         true,
-	BuckHashSys:   true,
-	Frees:         true,
-	GCCPUFraction: true,
-	GCSys:         true,
-	HeapAlloc:     true,
-	HeapIdle:      true,
-	HeapInuse:     true,
-	HeapObjects:   true,
-	HeapReleased:  true,
-	HeapSys:       true,
-	LastGC:        true,
-	Lookups:       true,
-	MCacheInuse:   true,
-	MCacheSys:     true,
-	MSpanInuse:    true,
-	MSpanSys:      true,
-	Mallocs:       true,
-	NextGC:        true,
-	NumForcedGC:   true,
-	NumGC:         true,
-	OtherSys:      true,
-	PauseTotalNs:  true,
-	StackInuse:    true,
-	StackSys:      true,
-	Sys:           true,
-	TotalAlloc:    true,
-	RandomValue:   true,
+	Alloc:           true,
+	BuckHashSys:     true,
+	Frees:           true,
+	GCCPUFraction:   true,
+	GCSys:           true,
+	HeapAlloc:       true,
+	HeapIdle:        true,
+	HeapInuse:       true,
+	HeapObjects:     true,
+	HeapReleased:    true,
+	HeapSys:         true,
+	LastGC:          true,
+	Lookups:         true,
+	MCacheInuse:     true,
+	MCacheSys:       true,
+	MSpanInuse:      true,
+	MSpanSys:        true,
+	Mallocs:         true,
+	NextGC:          true,
+	NumForcedGC:     true,
+	NumGC:           true,
+	OtherSys:        true,
+	PauseTotalNs:    true,
+	StackInuse:      true,
+	StackSys:        true,
+	Sys:             true,
+	TotalAlloc:      true,
+	RandomValue:     true,
+	TotalMemory:     true,
+	FreeMemory:      true,
+	CPUutilization1: true,
 }
 
 var Counters = map[string]bool{

@@ -15,16 +15,10 @@ type Storer interface {
 }
 
 type DBStorer interface {
+	Storer
+
 	Ping() error
 	Shutdown() error
-
-	Put(string, interface{}) error
-	Get(string) (interface{}, error)
-
-	PutMetrics(metrics.ProxyMetrics) error
-	GetMetrics() (metrics.ProxyMetrics, error)
-
-	Restore(metrics.ProxyMetrics) error
 }
 
 type FileStorer interface {
