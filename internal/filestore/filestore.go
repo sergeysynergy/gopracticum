@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 var (

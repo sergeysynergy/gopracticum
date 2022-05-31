@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/internal/agent"
+	"github.com/sergeysynergy/metricser/internal/agent"
 )
 
 type Config struct {

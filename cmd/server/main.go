@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/internal/db"
-	"github.com/sergeysynergy/gopracticum/internal/filestore"
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
-	"github.com/sergeysynergy/gopracticum/internal/httpserver"
+	"github.com/sergeysynergy/metricser/internal/db"
+	"github.com/sergeysynergy/metricser/internal/filestore"
+	"github.com/sergeysynergy/metricser/internal/handlers"
+	"github.com/sergeysynergy/metricser/internal/httpserver"
 )
 
 type config struct {

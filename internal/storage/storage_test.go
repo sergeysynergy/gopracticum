@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func TestStoragePut(t *testing.T) {

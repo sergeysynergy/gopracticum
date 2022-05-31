@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 type Storer interface {

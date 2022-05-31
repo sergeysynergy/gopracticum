@@ -5,14 +5,14 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/gopracticum/internal/filestore"
+	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sergeysynergy/gopracticum/internal/storage"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func compress(t *testing.T, data []byte) []byte {

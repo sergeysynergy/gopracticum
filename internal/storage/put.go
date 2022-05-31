@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func (s *Storage) Put(key string, metric interface{}) error {

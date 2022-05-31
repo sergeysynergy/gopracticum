@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func TestFileStoreRestoreMetrics(t *testing.T) {

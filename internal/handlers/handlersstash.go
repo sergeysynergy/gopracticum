@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {

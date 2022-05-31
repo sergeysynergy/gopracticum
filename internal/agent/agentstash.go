@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 	"net/http"
 	"sync"

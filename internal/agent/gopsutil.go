@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 // Выполняем регулярное обновление метрик посредством пакета `gopsutil` пока не пришёл сигнал отмены.

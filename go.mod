@@ -1,8 +1,8 @@
-module github.com/sergeysynergy/gopracticum
+module github.com/sergeysynergy/metricser
 
 go 1.17
 
-replace github.com/sergeysynergy/gopracticum => ../gopracticum
+replace github.com/sergeysynergy/metricser => ../gopracticum
 
 require (
 	github.com/caarlos0/env/v6 v6.9.1

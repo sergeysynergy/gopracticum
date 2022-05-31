@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 // Выполняем регулярную отправку метрик на сервер пока не пришёл сигнал отмены.

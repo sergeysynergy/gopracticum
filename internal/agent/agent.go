@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
 type Agent struct {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 var (

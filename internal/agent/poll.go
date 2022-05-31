@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 // Выполняем регулярное обновление метрик пока не пришёл сигнал отмены.

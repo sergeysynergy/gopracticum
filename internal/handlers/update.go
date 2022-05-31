@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {

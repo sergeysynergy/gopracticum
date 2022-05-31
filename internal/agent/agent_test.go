@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sergeysynergy/gopracticum/internal/handlers"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/internal/handlers"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func TestAgentSendJsonRequest(t *testing.T) {

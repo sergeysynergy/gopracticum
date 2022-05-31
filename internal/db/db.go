@@ -3,13 +3,13 @@ package db
 import (
 	"context"
 	"database/sql"
-	"github.com/sergeysynergy/gopracticum/pkg/metrics"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 
-	"github.com/sergeysynergy/gopracticum/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
 const (
