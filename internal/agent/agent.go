@@ -5,7 +5,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"log"
 	"math/rand"
-	//_ "net/http/pprof" // подключаем пакет pprof
 	"os"
 	"os/signal"
 	"syscall"
@@ -96,8 +95,6 @@ func (a *Agent) Run() {
 	go a.pollTicker(ctx)
 	go a.gopsutilTicker(ctx)
 	go a.reportTicker(ctx)
-
-	//go http.ListenAndServe(":8091", nil) // запускаем сервер для нужд профилирования
 
 	// Агент должен штатно завершаться по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT.
 	c := make(chan os.Signal, 1)
