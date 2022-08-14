@@ -71,7 +71,8 @@ func WithDBStorer(ds storage.DBStorer) Option {
 	}
 }
 
-func (s *Server) Serve() {
+func (s *Server) graceDown() {
+	// Рутина для штатного завершения работы
 	go func() {
 		// штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT
 		sig := make(chan os.Signal, 1)
@@ -117,6 +118,10 @@ func (s *Server) Serve() {
 			log.Fatal("[ERROR] Server shutdown error - ", err)
 		}
 	}()
+}
+
+func (s *Server) Serve() {
+	s.graceDown()
 
 	// вызовем рутину периодического сохранения данных метрик в файл, если хранилище проинициализировано
 	if s.fileStorer != nil {

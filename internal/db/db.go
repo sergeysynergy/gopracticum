@@ -58,7 +58,7 @@ type Storage struct {
 func New(dsn string) storage.DBStorer {
 	// вернём nil в случае пустой строки DSN
 	if dsn == "" {
-		return nil
+		log.Fatal("[FATAL] Empty DSN")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

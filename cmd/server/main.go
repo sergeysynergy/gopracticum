@@ -4,6 +4,8 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"log"
+	"net/http"
+	_ "net/http/pprof" // подключаем пакет pprof
 	"time"
 
 	"github.com/sergeysynergy/gopracticum/internal/db"
@@ -61,6 +63,8 @@ func main() {
 		httpserver.WithFileStorer(fileStorer),
 		httpserver.WithDBStorer(dbStorer),
 	)
+
+	go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования
 
 	s.Serve()
 }
