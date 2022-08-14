@@ -1,46 +1,23 @@
-package db
+// Package pgsql Пакет предназначен для записи значений метрик в базу данных Postgres.
+package pgsql
 
 import (
 	"context"
 	"database/sql"
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 	"log"
+	"sync"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 
+	"github.com/sergeysynergy/gopracticum/internal/data/model"
 	"github.com/sergeysynergy/gopracticum/internal/storage"
 )
 
-const (
-	initTimeOut = 60 * time.Second
-	//queryTimeOut = 60 * time.Second
-
-	queryCreateTable = `
-		CREATE TABLE public.metrics (
-			id text NOT NULL,
-			type text NOT NULL, 
-			value double precision,
-			delta bigint,
-			PRIMARY KEY (id)
-		);
-	`
-	queryInsertGauge = `INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)`
-	//queryInsertCounter = `INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)`
-	queryUpdateGauge = `UPDATE metrics SET value = $2 WHERE id = $1`
-	//queryUpdateCounter = `UPDATE metrics SET delta = $2 WHERE id = $1`
-	queryGet        = `SELECT id, type, value, delta FROM metrics WHERE id=$1`
-	queryGetMetrics = `SELECT id, type, value, delta FROM metrics`
-)
-
-type metricsDB struct {
-	ID    string
-	MType string
-	Value sql.NullFloat64
-	Delta sql.NullInt64
-}
-
+// Storage хранит подключение к БД, контекст выполнения и список SQL-утверждений.
 type Storage struct {
+	onceDB sync.Once
 	db     *sql.DB
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -55,8 +32,9 @@ type Storage struct {
 	stmtAllSelect     *sql.Stmt
 }
 
+// New создаёт и инициализирует новую структуру типа Storage.
 func New(dsn string) storage.DBStorer {
-	// вернём nil в случае пустой строки DSN
+	// Вернём nil в случае пустой строки DSN. Важно: если не возвращать `nil`, не пройдут автотесты.
 	if dsn == "" {
 		return nil
 	}
@@ -68,13 +46,13 @@ func New(dsn string) storage.DBStorer {
 		cancel: cancel,
 	}
 
-	// проинициализируем подключение к БД
-	err := s.init(dsn)
+	s.initDB(dsn)
+
+	err := s.initTable()
 	if err != nil {
 		log.Fatal("[FATAL] Database initialization failed - ", err)
 	}
 
-	// опишем стейтменты
 	err = s.initStatements()
 	if err != nil {
 		log.Fatal("[FATAL] Database statements initialization failed - ", err)
@@ -83,19 +61,34 @@ func New(dsn string) storage.DBStorer {
 	return s
 }
 
-func (s *Storage) init(dsn string) error {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		return err
-	}
-	s.db = db
+// initDB Инициализирует и настраивает подключение к БД, создаёт таблицу с метриками при необходимости.
+func (s *Storage) initDB(dsn string) {
+	s.onceDB.Do(func() {
+		db, err := sql.Open("pgx", dsn)
+		if err != nil {
+			log.Fatal("[FATAL] Database initialization failed - ", err)
+		}
+		s.db = db
 
-	ctx, cancel := context.WithTimeout(context.Background(), initTimeOut)
-	defer cancel()
+		db.SetMaxOpenConns(40)
+		db.SetMaxIdleConns(20)
+		db.SetConnMaxIdleTime(time.Second * 60)
+	})
+}
 
-	_, err = db.ExecContext(ctx, "select * from metrics;")
+// initTable Создаёт в БД таблицу с метриками, если она отсутствует.
+func (s *Storage) initTable() error {
+	_, err := s.db.ExecContext(s.ctx, "select * from metrics;")
 	if err != nil {
-		_, err = db.ExecContext(ctx, queryCreateTable)
+		_, err = s.db.ExecContext(s.ctx, `
+			CREATE TABLE public.metrics (
+				id text NOT NULL,
+				type text NOT NULL, 
+				value double precision,
+				delta bigint,
+				PRIMARY KEY (id)
+			);
+		`)
 		if err != nil {
 			return err
 		}
@@ -103,13 +96,10 @@ func (s *Storage) init(dsn string) error {
 		log.Println("table `metrics` created")
 	}
 
-	db.SetMaxOpenConns(40)
-	db.SetMaxIdleConns(20)
-	db.SetConnMaxIdleTime(time.Second * 60)
-
 	return nil
 }
 
+// closeStatements Инициализирует SLQ-утверждения при запуске.
 func (s *Storage) initStatements() error {
 	var err error
 
@@ -156,6 +146,7 @@ func (s *Storage) initStatements() error {
 	return nil
 }
 
+// closeStatements Закрывает SLQ-утверждения при завершении работы.
 func (s *Storage) closeStatements() error {
 	err := s.stmtGaugeInsert.Close()
 	if err != nil {
@@ -200,6 +191,7 @@ func (s *Storage) closeStatements() error {
 	return nil
 }
 
+// Ping позволяет проверить наличие связи с БД.
 func (s *Storage) Ping() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -211,6 +203,7 @@ func (s *Storage) Ping() error {
 	return nil
 }
 
+// Shutdown штатно завершает работу с БД.
 func (s *Storage) Shutdown() error {
 	s.cancel()
 
@@ -228,12 +221,12 @@ func (s *Storage) Shutdown() error {
 	return nil
 }
 
-// получим текущее значение счётчика
+// checkCounter Получает текущее значение счётчика.
 func (s *Storage) checkCounter(id string) (metrics.Counter, error) {
-	mdb := metricsDB{}
+	m := model.Metrics{}
 	row := s.stmtCounterGet.QueryRowContext(s.ctx, id)
 
-	err := row.Scan(&mdb.ID, &mdb.MType, &mdb.Value, &mdb.Delta)
+	err := row.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
 	if err == sql.ErrNoRows {
 		_, err = s.stmtCounterInsert.ExecContext(s.ctx, id, 0)
 		if err != nil {
@@ -245,5 +238,5 @@ func (s *Storage) checkCounter(id string) (metrics.Counter, error) {
 		return 0, err
 	}
 
-	return metrics.Counter(mdb.Delta.Int64), nil
+	return metrics.Counter(m.Delta.Int64), nil
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
-type Storer interface {
+type Repo interface {
 	Put(string, interface{}) error
 	Get(string) (interface{}, error)
 
@@ -15,14 +15,14 @@ type Storer interface {
 }
 
 type DBStorer interface {
-	Storer
+	Repo
 
 	Ping() error
 	Shutdown() error
 }
 
 type FileStorer interface {
-	Storer
+	Repo
 	WriteTicker() error
 	WriteMetrics() (int, error)
 	Shutdown() error

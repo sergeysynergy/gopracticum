@@ -21,7 +21,7 @@ const (
 
 type Handler struct {
 	router     chi.Router
-	storer     storage.Storer
+	storer     storage.Repo
 	fileStorer storage.FileStorer
 	dbStorer   storage.DBStorer
 	key        string

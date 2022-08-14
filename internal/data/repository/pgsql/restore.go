@@ -1,4 +1,4 @@
-package db
+package pgsql
 
 import (
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"

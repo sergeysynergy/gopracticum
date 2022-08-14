@@ -4,13 +4,14 @@ import (
 	"github.com/sergeysynergy/gopracticum/pkg/metrics"
 )
 
+// Restore Массово загружает переданные значения метрик в хранилища Storage.
 func (s *Storage) Restore(m metrics.ProxyMetrics) error {
-	// для удобства вызова PutMetrics проиницилизируем нулевой хэш Gauges
+	// для удобства вызова PutMetrics проинициализируем нулевой хэш Gauges
 	if m.Gauges == nil {
 		m.Gauges = make(map[string]metrics.Gauge)
 	}
 
-	// для удобства вызова PutMetrics проиницилизируем нулевой хэш Counters
+	// для удобства вызова PutMetrics проинициализируем нулевой хэш Counters
 	if m.Counters == nil {
 		m.Counters = make(map[string]metrics.Counter)
 	}
