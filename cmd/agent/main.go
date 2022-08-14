@@ -4,8 +4,7 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"log"
-	"net/http"
-	_ "net/http/pprof" // подключаем пакет pprof
+	//_ "net/http/pprof" // подключаем пакет pprof
 	"time"
 
 	"github.com/sergeysynergy/metricser/internal/agent"
@@ -40,7 +39,7 @@ func main() {
 		agent.WithKey(cfg.Key),
 	)
 
-	go http.ListenAndServe(":8091", nil) // запускаем сервер для нужд профилирования
+	//go http.ListenAndServe(":8091", nil) // запускаем сервер для нужд профилирования
 
 	a.Run()
 }

@@ -4,8 +4,7 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"log"
-	"net/http"
-	_ "net/http/pprof" // подключаем пакет pprof
+	//_ "net/http/pprof" // подключаем пакет pprof
 	"time"
 
 	"github.com/sergeysynergy/metricser/internal/data/repository/pgsql"
@@ -64,7 +63,7 @@ func main() {
 		httpserver.WithDBStorer(dbStorer),
 	)
 
-	go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования
+	//go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования
 
 	s.Serve() // запускаем основной http-сервер
 }

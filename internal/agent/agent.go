@@ -15,7 +15,7 @@ import (
 
 type Agent struct {
 	client         *resty.Client
-	storage        storage.Storer
+	storage        storage.Repo
 	pollInterval   time.Duration
 	reportInterval time.Duration
 	protocol       string
