@@ -10,6 +10,7 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+// Update Добавляет или обновляет значение метрики в хранилище по ID.
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
 	if ct != applicationJSON {

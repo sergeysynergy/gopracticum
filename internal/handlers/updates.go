@@ -11,6 +11,7 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+// Updates Массово добавляет или обновляет значение метрик в хранилище.
 func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
 	prefix := fmt.Sprintf("[%s]", middleware.GetReqID(r.Context()))

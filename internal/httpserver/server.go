@@ -1,3 +1,4 @@
+// Package httpserver Пакет предназначен для запуска сервиса по сбору и хранения метрик на базе http-сервера.
 package httpserver
 
 import (

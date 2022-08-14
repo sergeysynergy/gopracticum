@@ -1,3 +1,4 @@
+// Package handlers Пакет реализует JSON API и точки подключения `endpoints` для работы с хранилищем метрик.
 package handlers
 
 import (
@@ -19,6 +20,7 @@ const (
 	textHTML        = "text/html"
 )
 
+// Handler хранит объекты роутов, репозитория и непосредственно бизнес-логики для работы с хранилищем метрик.
 type Handler struct {
 	router     chi.Router
 	storer     storage.Repo
@@ -29,9 +31,10 @@ type Handler struct {
 
 type Option func(handler *Handler)
 
+// New Создаёт новый объект JSON API Handler.
 func New(opts ...Option) *Handler {
 	h := &Handler{
-		// созданим новый роутер
+		// создадим новый роутер
 		router: chi.NewRouter(),
 	}
 
@@ -68,6 +71,7 @@ func New(opts ...Option) *Handler {
 	return h
 }
 
+// WithFileStorer Использует переданное файловое хранилище.
 func WithFileStorer(fs storage.FileStorer) Option {
 	return func(h *Handler) {
 		if fs != nil {
@@ -77,6 +81,7 @@ func WithFileStorer(fs storage.FileStorer) Option {
 	}
 }
 
+// WithDBStorer Использует переданный репозиторий.
 func WithDBStorer(db storage.DBStorer) Option {
 	return func(h *Handler) {
 		if db != nil {
@@ -86,16 +91,19 @@ func WithDBStorer(db storage.DBStorer) Option {
 	}
 }
 
+// WithKey Использует переданный ключ для создания хэша.
 func WithKey(key string) Option {
 	return func(h *Handler) {
 		h.key = key
 	}
 }
 
+// GetRouter Возвращает объект роутер.
 func (h *Handler) GetRouter() chi.Router {
 	return h.router
 }
 
+// List Возвращает список со значением всех метрик.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", textHTML)
 	w.WriteHeader(http.StatusOK)

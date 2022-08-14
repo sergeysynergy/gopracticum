@@ -1,4 +1,4 @@
-// Package pgsql Пакет предназначен для записи значений метрик в базу данных Postgres.
+// Package pgsql Пакет предназначен для записи/извлечения значений метрик в базу данных Postgres.
 package pgsql
 
 import (

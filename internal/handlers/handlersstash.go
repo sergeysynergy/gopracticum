@@ -9,6 +9,11 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+// Post записывает значение метрики в хранилище.
+//
+// Deprecated: используйте
+//  h := handlers.New()
+//  h.Update(http.ResponseWriter, *http.Request)
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")
@@ -51,6 +56,11 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Get извлекает значение метрики из хранилища.
+//
+// Deprecated: используйте
+//  h := handlers.New()
+//  h.Value(http.ResponseWriter, *http.Request)
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")

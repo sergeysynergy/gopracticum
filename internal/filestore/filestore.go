@@ -1,3 +1,4 @@
+// Package filestore Пакет предназначен для записи/извлечения значений метрик в файл.
 package filestore
 
 import (

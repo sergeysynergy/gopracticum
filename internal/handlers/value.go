@@ -11,6 +11,7 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+// Value Извлекает из хранилища значение метрики для заданного ID.
 func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("\"POST http://%s/value/\"", r.Host)
 	prefix := fmt.Sprintf("[%s]", middleware.GetReqID(r.Context()))
