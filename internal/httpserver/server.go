@@ -12,15 +12,17 @@ import (
 	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
+// Server Хранит данные и объекты для реализации работы http-сервера.
 type Server struct {
 	server       *http.Server
 	fileStorer   storage.FileStorer
 	dbStorer     storage.DBStorer
-	graceTimeout time.Duration // время на штатное завершения работы сервера
+	graceTimeout time.Duration // Время на штатное завершения работы сервера
 }
 
 type Option func(server *Server)
 
+// New Создаёт новый объект типа Server.
 func New(h http.Handler, opts ...Option) *Server {
 	const (
 		defaultAddress      = "127.0.0.1:8080"
@@ -47,6 +49,7 @@ func New(h http.Handler, opts ...Option) *Server {
 	return s
 }
 
+// WithAddress Использует переданный адрес для запуска сервера.
 func WithAddress(addr string) Option {
 	return func(s *Server) {
 		if addr != "" {
@@ -55,6 +58,7 @@ func WithAddress(addr string) Option {
 	}
 }
 
+// WithFileStorer Использует переданное файловое хранилище.
 func WithFileStorer(fs storage.FileStorer) Option {
 	return func(s *Server) {
 		if fs != nil {
@@ -63,6 +67,7 @@ func WithFileStorer(fs storage.FileStorer) Option {
 	}
 }
 
+// WithDBStorer Использует переданный репозиторий.
 func WithDBStorer(ds storage.DBStorer) Option {
 	return func(s *Server) {
 		if ds != nil {
@@ -71,7 +76,9 @@ func WithDBStorer(ds storage.DBStorer) Option {
 	}
 }
 
-func (s *Server) Serve() {
+// graceDown Штатное завершение работы сервера.
+func (s *Server) graceDown() {
+	// Рутина для штатного завершения работы
 	go func() {
 		// штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT
 		sig := make(chan os.Signal, 1)
@@ -117,6 +124,11 @@ func (s *Server) Serve() {
 			log.Fatal("[ERROR] Server shutdown error - ", err)
 		}
 	}()
+}
+
+// Serve Запускает основные методы всего сервиса `Metricser`.
+func (s *Server) Serve() {
+	s.graceDown()
 
 	// вызовем рутину периодического сохранения данных метрик в файл, если хранилище проинициализировано
 	if s.fileStorer != nil {

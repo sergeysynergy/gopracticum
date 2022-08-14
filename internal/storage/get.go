@@ -4,17 +4,18 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
-func (s *Storage) Get(key string) (interface{}, error) {
+// Get Извлекает значение метрики из хранилища Storage для заданного ID.
+func (s *Storage) Get(id string) (interface{}, error) {
 	s.countersMu.Lock()
 	defer s.countersMu.Unlock()
-	delta, ok := s.counters[key]
+	delta, ok := s.counters[id]
 	if ok {
 		return delta, nil
 	}
 
 	s.gaugesMu.Lock()
 	defer s.gaugesMu.Unlock()
-	value, ok := s.gauges[key]
+	value, ok := s.gauges[id]
 	if ok {
 		return value, nil
 	}
@@ -22,6 +23,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return nil, ErrNotFound
 }
 
+// GetMetrics Массово извлекает значение метрик из хранилища Storage.
 func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 	prm := metrics.NewProxyMetrics()
 

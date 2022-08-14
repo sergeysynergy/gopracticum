@@ -1,17 +1,22 @@
-package db
+package pgsql
 
 import (
 	"fmt"
-	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
+
+	"github.com/sergeysynergy/metricser/internal/data/model"
+	metricserErrors "github.com/sergeysynergy/metricser/internal/errors"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+// Get извлекает из БД метрику любого типа по ID.
 func (s *Storage) Get(id string) (interface{}, error) {
-	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
-	//defer cancel()
-
-	m := metricsDB{}
-	row := s.db.QueryRowContext(s.ctx, queryGet, id)
+	m := model.Metrics{}
+	row := s.db.QueryRowContext(
+		s.ctx,
+		`SELECT id, type, value, delta FROM metrics WHERE id=$1`,
+		id,
+	)
 	// разбираем результат
 	err := row.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
 	if err != nil {
@@ -32,16 +37,17 @@ func (s *Storage) Get(id string) (interface{}, error) {
 	default:
 	}
 
-	return nil, fmt.Errorf("metric not implemented")
+	return nil, metricserErrors.MetricNotImplemented
 }
 
+// GetMetrics извлекает из БД значение всех метрик.
 func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 	mcs := metrics.NewProxyMetrics()
 
 	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
 	//defer cancel()
 
-	rows, err := s.db.QueryContext(s.ctx, queryGetMetrics)
+	rows, err := s.db.QueryContext(s.ctx, `SELECT id, type, value, delta FROM metrics`)
 	if err != nil {
 		return mcs, err
 	}
@@ -50,7 +56,7 @@ func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 
 	// пробегаем по всем записям
 	for rows.Next() {
-		var m metricsDB
+		m := model.Metrics{}
 		err = rows.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
 		if err != nil {
 			return mcs, err

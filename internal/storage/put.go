@@ -4,19 +4,20 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
-func (s *Storage) Put(key string, metric interface{}) error {
+// Put Записывает значение метрики в хранилище Storage для заданного ID.
+func (s *Storage) Put(id string, metric interface{}) error {
 	switch m := metric.(type) {
 	case metrics.Gauge:
 		s.gaugesMu.Lock()
-		s.gauges[key] = m
+		s.gauges[id] = m
 		s.gaugesMu.Unlock()
 	case metrics.Counter:
 		s.countersMu.Lock()
-		_, ok := s.counters[key]
+		_, ok := s.counters[id]
 		if !ok {
-			s.counters[key] = m
+			s.counters[id] = m
 		} else {
-			s.counters[key] += m
+			s.counters[id] += m
 		}
 		s.countersMu.Unlock()
 	default:
@@ -26,13 +27,14 @@ func (s *Storage) Put(key string, metric interface{}) error {
 	return nil
 }
 
+// PutMetrics Массово записывает значение метрик в хранилище Storage.
 func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
-	// для удобства вызова PutMetrics проиницилизируем нулевой хэш Gauges
+	// для удобства вызова PutMetrics проинициализируем нулевой хэш Gauges
 	if m.Gauges == nil {
 		m.Gauges = make(map[string]metrics.Gauge)
 	}
 
-	// для удобства вызова PutMetrics проиницилизируем нулевой хэш Counters
+	// для удобства вызова PutMetrics проинициализируем нулевой хэш Counters
 	if m.Counters == nil {
 		m.Counters = make(map[string]metrics.Counter)
 	}

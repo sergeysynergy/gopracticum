@@ -1,15 +1,19 @@
-package db
+package pgsql
 
 import (
 	"database/sql"
-	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
+
+	"github.com/sergeysynergy/metricser/internal/data/model"
+	metricserErrors "github.com/sergeysynergy/metricser/internal/errors"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+// Put записывает значение метрики в БД для заданного ID.
 func (s *Storage) Put(id string, val interface{}) error {
 	switch m := val.(type) {
 	case metrics.Gauge:
-		result, err := s.db.ExecContext(s.ctx, queryUpdateGauge, id, m)
+		result, err := s.db.ExecContext(s.ctx, `UPDATE metrics SET value = $2 WHERE id = $1`, id, m)
 		if err != nil {
 			return err
 		}
@@ -19,7 +23,12 @@ func (s *Storage) Put(id string, val interface{}) error {
 			return err
 		}
 		if rows == 0 {
-			_, err = s.db.ExecContext(s.ctx, queryInsertGauge, id, m)
+			_, err = s.db.ExecContext(
+				s.ctx,
+				`INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)`,
+				id,
+				m,
+			)
 			if err != nil {
 				return err
 			}
@@ -30,17 +39,18 @@ func (s *Storage) Put(id string, val interface{}) error {
 		if err != nil {
 			return err
 		}
-		// запишим увеличенное значение
+		// запишем увеличенное значение
 		if _, err = s.stmtCounterUpdate.ExecContext(s.ctx, id, m+v); err != nil {
 			return err
 		}
 	default:
-		return metrics.ErrNotImplemented
+		return metricserErrors.MetricNotImplemented
 	}
 
 	return nil
 }
 
+// PutMetrics Массово записывает значение метрик в БД.
 func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -57,7 +67,7 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 	if m.Gauges != nil {
 		for id, value := range m.Gauges {
 			if id == "CPUutilization1" {
-				log.Println("db.PutMetrics CPUutilization1:", value)
+				log.Println("pgsql.PutMetrics CPUutilization1:", value)
 			}
 
 			result, err := txGaugeUpdate.Exec(id, value)
@@ -80,13 +90,13 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 	if m.Counters != nil {
 		for id, delta := range m.Counters {
 			// получим текущее значение счётчика
-			mdb := metricsDB{}
-			// s.db.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
+			m := model.Metrics{}
+			// s.pgsql.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
 			row := txCounterGet.QueryRowContext(s.ctx, id)
-			err = row.Scan(&mdb.ID, &mdb.MType, &mdb.Value, &mdb.Delta)
+			err = row.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
 			if err == sql.ErrNoRows {
 				// добавим новую запись в случае отсутствия результата
-				// s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)")
+				// s.pgsql.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)")
 				_, err = txCounterInsert.ExecContext(s.ctx, id, delta)
 				if err != nil {
 					return err
@@ -97,13 +107,13 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 				return err
 			}
 
-			// запишим увеличенное значение
+			// запишем увеличенное значение
 			v := metrics.Counter(0)
-			if mdb.Delta.Valid {
-				v = metrics.Counter(mdb.Delta.Int64)
+			if m.Delta.Valid {
+				v = metrics.Counter(m.Delta.Int64)
 			}
 			hm := delta + v
-			// s.db.PrepareContext(s.ctx, "UPDATE metrics SET delta = $2 WHERE id = $1")
+			// s.pgsql.PrepareContext(s.ctx, "UPDATE metrics SET delta = $2 WHERE id = $1")
 			if _, err = txCounterUpdate.ExecContext(s.ctx, id, hm); err != nil {
 				return err
 			}
