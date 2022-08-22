@@ -1,5 +1,7 @@
 package agent
 
+//lint:file-ignore U1000 игнорируем неиспользуемый код, так как он сохранён для примера
+
 import (
 	"context"
 	"fmt"

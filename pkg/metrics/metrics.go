@@ -1,3 +1,4 @@
+// Package metrics Пакет описывает структуру метрик и базовые методы для работы с ними.
 package metrics
 
 import (

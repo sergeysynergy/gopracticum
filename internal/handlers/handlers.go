@@ -144,6 +144,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	w.Write(b.Bytes())
 }
 
+// TODO: проверить зачем был нужен метод
+/*
 func (h *Handler) hashCheck(m *metrics.Metrics) error {
 	if h.key == "" {
 		return nil
@@ -178,3 +180,4 @@ func (h *Handler) hashCheck(m *metrics.Metrics) error {
 	}
 	return nil
 }
+*/
