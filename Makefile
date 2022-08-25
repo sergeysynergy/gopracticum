@@ -1,6 +1,7 @@
 .PHONY: test
 
 test:
+	go test ./cmd/staticlint/main_test.go
 	go test ./pkg/metrics/*
 	go test ./internal/agent/*
 	go test ./internal/data/repository/pgsql/*
@@ -10,6 +11,7 @@ test:
 	go test ./internal/storage/*
 
 cover:
+	go test -cover ./cmd/staticlint/main_test.go
 	go test -cover ./pkg/metrics/*
 	go test -cover ./internal/agent/*
 	go test -cover ./internal/data/repository/pgsql/*
