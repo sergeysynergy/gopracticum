@@ -66,21 +66,22 @@ func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 
 	if m.Gauges != nil {
 		for id, value := range m.Gauges {
+			var errGauge error
 			if id == "CPUutilization1" {
 				log.Println("pgsql.PutMetrics CPUutilization1:", value)
 			}
 
-			result, err := txGaugeUpdate.Exec(id, value)
-			if err != nil {
+			result, errGauge := txGaugeUpdate.Exec(id, value)
+			if errGauge != nil {
 				return err
 			}
-			count, err := result.RowsAffected()
-			if err != nil {
+			count, errGauge := result.RowsAffected()
+			if errGauge != nil {
 				return err
 			}
 			if count == 0 {
-				_, err := txGaugeInsert.ExecContext(s.ctx, id, value)
-				if err != nil {
+				_, errGaugeInsert := txGaugeInsert.ExecContext(s.ctx, id, value)
+				if errGaugeInsert != nil {
 					return err
 				}
 			}

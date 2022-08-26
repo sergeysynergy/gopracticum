@@ -20,17 +20,18 @@ func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 	// запишем значения gauge
 	if m.Gauges != nil {
 		for id, value := range m.Gauges {
-			result, err := txGaugeUpdate.Exec(id, value)
-			if err != nil {
+			var errGauge error
+			result, errGauge := txGaugeUpdate.Exec(id, value)
+			if errGauge != nil {
 				return err
 			}
-			count, err := result.RowsAffected()
-			if err != nil {
+			count, errGauge := result.RowsAffected()
+			if errGauge != nil {
 				return err
 			}
 			if count == 0 {
-				_, err := txGaugeInsert.ExecContext(s.ctx, id, value)
-				if err != nil {
+				_, errGaugeInsert := txGaugeInsert.ExecContext(s.ctx, id, value)
+				if errGaugeInsert != nil {
 					return err
 				}
 			}
@@ -40,17 +41,18 @@ func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 	// запишем значения counters
 	if m.Counters != nil {
 		for id, delta := range m.Counters {
-			result, err := txCounterUpdate.Exec(id, delta)
-			if err != nil {
+			var errCounter error
+			result, errCounter := txCounterUpdate.Exec(id, delta)
+			if errCounter != nil {
 				return err
 			}
-			count, err := result.RowsAffected()
-			if err != nil {
+			count, errCounter := result.RowsAffected()
+			if errCounter != nil {
 				return err
 			}
 			if count == 0 {
-				_, err := txCounterInsert.ExecContext(s.ctx, id, delta)
-				if err != nil {
+				_, errCounterInsert := txCounterInsert.ExecContext(s.ctx, id, delta)
+				if errCounterInsert != nil {
 					return err
 				}
 			}
