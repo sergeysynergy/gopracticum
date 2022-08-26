@@ -1,15 +1,26 @@
 // Package main Пакет реализует функционал статического анализатора кода на базе нескольких анализаторов:
 // - стандартного набора анализаторов пакета `golang.org/x/tools/go/analysis/passes`;
 // - всех анализаторов класса SA пакета staticcheck.io;
-// - анализатор [] из пакета staticcheck.io;
-// - анализатор из публичного пакета ...;
-// - анализатор из публичного пакета ...;
+// - анализаторы QF1003, QF1010, S1000, S1001, ST1000 и ST1005 из пакета staticcheck.io;
+// - анализатор из публичного пакета `github.com/kisielk/errcheck/errcheck`;
+// - анализатор из публичного пакета `github.com/fatih/errwrap/errwrap`;
 // - собственный анализатора `ExitAnalyzer`, который запрещает использовать прямой вызов os.Exit в функции main пакета main.
+//
+// Установка осуществляется командной `go install`.
+//
+// Выполнение команды `staticlint ./...` проанализирует рекурсивно все файлы и каталоги из вызванного места.
+// Для анализа отдельного файла выполните `staticlint [имя_файла]`.
+//
+// По умолчанию применяются все анализаторы.
+// Чтобы выбрать конкретные анализаторы, используйте флаг -NAME для каждого из них
+// или -NAME=false для запуска всех анализаторов, которые явно не отключены.
 
 package main
 
 import (
 	"fmt"
+	"github.com/fatih/errwrap/errwrap"
+	"github.com/kisielk/errcheck/errcheck"
 	"go/ast"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
@@ -45,54 +56,47 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unsafeptr"
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
+	"honnef.co/go/tools/quickfix"
+	"honnef.co/go/tools/simple"
 	"honnef.co/go/tools/staticcheck"
+	"honnef.co/go/tools/stylecheck"
 	"strings"
 )
 
 func main() {
 	// Использование пакета analysis требует минимальных усилий для создания multichecker с интерфейсом командной строки.
 	// Создадим свой `multichecker` на базе пакет analysis.
-	myChecks := []*analysis.Analyzer{
-		ExitAnalyzer,
-	}
+	checksLen := len(staticcheck.Analyzers) + 50
+	var myChecks = make([]*analysis.Analyzer, 0, checksLen)
 
 	// Добавим в `multichecker` анализаторы из пакета analysis/passes.
-	myChecks = append(myChecks, GetPasses()...)
+	myChecks = append(myChecks, PassesChecks()...)
 
-	// TODO: переделать через конфиг
-	//myChecks = append(myChecks, getStaticChecks()...)
+	// Добавим анализаторы из пакета analysis/passes.
+	myChecks = append(myChecks, StaticChecks()...) // TODO: переделать через конфиг, вопрос как это сделать?
+	myChecks = append(myChecks, SimpleChecks()...)
+	myChecks = append(myChecks, StyleChecks()...)
+	myChecks = append(myChecks, QuickFixChecks()...)
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Добавим анализатор из открытого пакета `github.com/kisielk/errcheck/errcheck`
+	// для проверки непроверенных ошибок в исходном коде go.
+	myChecks = append(myChecks, errcheck.Analyzer)
 
-	//appfile, err := os.Executable()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//data, err := os.ReadFile(filepath.Join(filepath.Dir(appfile), Config))
-	//if err != nil {
-	//	data, err = os.ReadFile(filepath.Join("./", Config))
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//}
-	//var cfg ConfigData
-	//if err = json.Unmarshal(data, &cfg); err != nil {
-	//	panic(err)
-	//}
-	//
-	//// определяем map подключаемых правил на основе файла конфигурации
-	//checks := make(map[string]bool)
-	//for _, v := range cfg.Staticcheck {
-	//	checks[v] = true
-	//}
+	// Добавим анализатор из открытого пакета `https://github.com/fatih/errwrap`
+	// для проверки оборачивания возвращаемых ошибок через директиву `%w`.
+	myChecks = append(myChecks, errwrap.Analyzer)
+
+	// Добавим собственный анализатор: запрещает использовать прямой вызов os.Exit в функции main пакета main.
+	myChecks = append(myChecks, ExitAnalyzer)
 
 	multichecker.Main(
 		myChecks...,
 	)
+	//os.Exit(1)
 }
 
-// GetPasses Подключает полный набор стандартных статических анализаторов пакета `golang.org/x/tools/go/analysis/passes`.
-func GetPasses() []*analysis.Analyzer {
+// PassesChecks Подключает полный набор стандартных статических анализаторов пакета `golang.org/x/tools/go/analysis/passes`.
+func PassesChecks() []*analysis.Analyzer {
 	return []*analysis.Analyzer{
 		asmdecl.Analyzer,
 		assign.Analyzer,
@@ -129,21 +133,59 @@ func GetPasses() []*analysis.Analyzer {
 	}
 }
 
-// Config — имя файла конфигурации.
-const Config = `config.json`
-
-// ConfigData описывает структуру файла конфигурации.
-type ConfigData struct {
-	Staticcheck []string
-}
-
-func getStaticChecks() []*analysis.Analyzer {
+// StaticChecks Подключает набор анализаторов класса SA из пакета `staticcheck`.
+func StaticChecks() []*analysis.Analyzer {
 	checks := make([]*analysis.Analyzer, 0, len(staticcheck.Analyzers))
 
 	// Добавим все анализаторы из пакета `staticcheck` с префиксом SA
 	for _, v := range staticcheck.Analyzers {
-		if strings.HasPrefix(v.Name, "SA") {
-			checks = append(checks, v)
+		if strings.HasPrefix(v.Analyzer.Name, "SA") {
+			checks = append(checks, v.Analyzer)
+		}
+	}
+
+	return checks
+}
+
+// SimpleChecks Подключает анализаторы пакета `simple` для проверки на:
+// - S1000 Использование канала для приёма-передачи вместо одиночного case select.
+// - S1001 Использование вызова на копирование объекта вместо цикла.
+func SimpleChecks() []*analysis.Analyzer {
+	checks := make([]*analysis.Analyzer, 0, 2)
+
+	for _, v := range simple.Analyzers {
+		if v.Analyzer.Name == "S1000" || v.Analyzer.Name == "S1001" {
+			checks = append(checks, v.Analyzer)
+		}
+	}
+
+	return checks
+}
+
+// StyleChecks Подключает анализаторы пакета `stylecheck` для проверки на:
+// - ST1000 Неверное или отсутствующие комментирование пакета.
+// - ST1005 Неверный формат описания ошибки.
+func StyleChecks() []*analysis.Analyzer {
+	checks := make([]*analysis.Analyzer, 0, 2)
+
+	for _, v := range stylecheck.Analyzers {
+		if v.Analyzer.Name == "ST1000" || v.Analyzer.Name == "ST1005" {
+			checks = append(checks, v.Analyzer)
+		}
+	}
+
+	return checks
+}
+
+// QuickFixChecks Подключает анализаторы пакета `quickfix` для проверки:
+// - QF1003 Конвертация цепочки условий if/else-if в конструкцию switch.
+// - QF1010 Конвертация слайса байт в строку при выводе.
+func QuickFixChecks() []*analysis.Analyzer {
+	checks := make([]*analysis.Analyzer, 0, 2)
+
+	for _, v := range quickfix.Analyzers {
+		if v.Analyzer.Name == "QF1003" || v.Analyzer.Name == "QF1010" {
+			checks = append(checks, v.Analyzer)
 		}
 	}
 
@@ -168,55 +210,32 @@ func run(pass *analysis.Pass) (interface{}, error) {
 }
 
 func ExitCheck(file *ast.File) error {
-	// Флаги не самый элегантный вариант решения задачи.
-	// Но с учётом рекурсивного прохода по древовидному графу - рабочий.
-	// Задаём флаг, является ли пакет main'ом.
-	mainPackage := false
-	// Задаём флаг, является ли функция main'ом в пакете main.
-	mainFunc := false
-
 	var err error
 
 	ast.Inspect(file, func(node ast.Node) bool {
-		switch x := node.(type) {
-		case *ast.File:
-			if x.Name.Name == "main" {
-				mainPackage = true
-			} else {
-				mainPackage = false
+		if fl, ok := node.(*ast.File); ok {
+			if fl.Name.Name != "main" {
+				return false
 			}
-		case *ast.FuncDecl:
-			if x.Name.Name == "main" && mainPackage {
-				mainFunc = true
-			} else {
-				mainFunc = false
-			}
-		case *ast.SelectorExpr:
-			if mainPackage && mainFunc {
-				if fmt.Sprint(x.X) == "os" && x.Sel.Name == "Exit" {
-					err = fmt.Errorf("direct function call `os.Exit()` in main package")
-					return false
+			for _, v := range fl.Decls {
+				if mainFnc, ok := v.(*ast.FuncDecl); ok {
+					if mainFnc.Name.Name != "main" {
+						continue
+					}
+					// Рекурсивно проходим по элементам узла функция main: ищем прямое объявление os.Exit
+					ast.Inspect(mainFnc, func(node ast.Node) bool {
+						switch x := node.(type) {
+						case *ast.SelectorExpr:
+							if fmt.Sprint(x.X) == "os" && x.Sel.Name == "Exit" {
+								err = fmt.Errorf("direct function call `os.Exit()` in main package")
+								return false
+							}
+						}
+						return true
+					})
 				}
 			}
 		}
-
-		// Другим вариантом так и не понял, как обойти узлы...
-		//if fl, ok := n.(*ast.File); ok {
-		//	if fl.Name.Name != "main" {
-		//		return true
-		//	}
-		//	for _, v := range fl.Decls {
-		//		if mainFnc, ok := v.(*ast.FuncDecl); ok {
-		//			if mainFnc.Name.Name != "main" {
-		//				continue
-		//			}
-		//			for _, j := range mainFnc.Body.List {
-		//				fmt.Println(j)
-		//			}
-		//		}
-		//	}
-		//}
-
 		return true
 	})
 
