@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/errwrap/errwrap"
 	"github.com/kisielk/errcheck/errcheck"
 	"github.com/sergeysynergy/metricser/pkg/exitcheck"
 	"go/ast"
@@ -70,13 +71,13 @@ func main() {
 	var myChecks = make([]*analysis.Analyzer, 0, checksLen)
 
 	// Добавим в `multichecker` анализаторы из пакета analysis/passes.
-	//myChecks = append(myChecks, PassesChecks()...)
+	myChecks = append(myChecks, PassesChecks()...)
 
 	// Добавим анализаторы из пакета analysis/passes.
-	//myChecks = append(myChecks, StaticChecks()...) // TODO: переделать через конфиг, вопрос как это сделать?
-	//myChecks = append(myChecks, SimpleChecks()...)
-	//myChecks = append(myChecks, StyleChecks()...)
-	//myChecks = append(myChecks, QuickFixChecks()...)
+	myChecks = append(myChecks, StaticChecks()...) // TODO: переделать через конфиг, вопрос как это сделать?
+	myChecks = append(myChecks, SimpleChecks()...)
+	myChecks = append(myChecks, StyleChecks()...)
+	myChecks = append(myChecks, QuickFixChecks()...)
 
 	// Добавим анализатор из открытого пакета `github.com/kisielk/errcheck/errcheck`
 	// для проверки непроверенных ошибок в исходном коде go.
@@ -84,7 +85,7 @@ func main() {
 
 	// Добавим анализатор из открытого пакета `https://github.com/fatih/errwrap`
 	// для проверки оборачивания возвращаемых ошибок через директиву `%w`.
-	//myChecks = append(myChecks, errwrap.Analyzer)
+	myChecks = append(myChecks, errwrap.Analyzer)
 
 	// Добавим собственный анализатор: запрещает использовать прямой вызов os.Exit в функции main пакета main.
 	myChecks = append(myChecks, exitcheck.Analyzer)
