@@ -60,7 +60,6 @@ import (
 	"honnef.co/go/tools/simple"
 	"honnef.co/go/tools/staticcheck"
 	"honnef.co/go/tools/stylecheck"
-	"os"
 	"strings"
 )
 
@@ -93,8 +92,6 @@ func main() {
 	multichecker.Main(
 		myChecks...,
 	)
-	os.Exit(1)
-	os.Exit(1)
 }
 
 // PassesChecks Подключает полный набор стандартных статических анализаторов пакета `golang.org/x/tools/go/analysis/passes`.
