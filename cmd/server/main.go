@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/caarlos0/env/v6"
 	"log"
 	//_ "net/http/pprof" // подключаем пакет pprof
@@ -22,7 +23,27 @@ type config struct {
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
 }
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
+func checkNA(str string) string {
+	if str == "" {
+		return "N/A"
+	}
+	return str
+}
+
 func main() {
+	// Выведем номер версии, сборки и комит, если доступны.
+	// Для задания переменных рекомендуется использовать опции линковщика, например:
+	// go run -ldflags "-X main.buildVersion=v1.0.1" main.go
+	fmt.Printf("Build version: %s\n", checkNA(buildVersion))
+	fmt.Printf("Build date: %s\n", checkNA(buildDate))
+	fmt.Printf("Build commint: %s\n", checkNA(buildCommit))
+
 	cfg := new(config)
 	flag.StringVar(&cfg.Addr, "a", "127.0.0.1:8080", "address to listen on")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Postgres DSN")
