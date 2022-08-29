@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	"github.com/sergeysynergy/metricser/pkg/utils"
 	"log"
 	//_ "net/http/pprof" // подключаем пакет pprof
 	"time"
@@ -29,20 +30,13 @@ var (
 	buildCommit  string
 )
 
-func checkNA(str string) string {
-	if str == "" {
-		return "N/A"
-	}
-	return str
-}
-
 func main() {
 	// Выведем номер версии, сборки и комит, если доступны.
 	// Для задания переменных рекомендуется использовать опции линковщика, например:
 	// go run -ldflags "-X main.buildVersion=v1.0.1" main.go
-	fmt.Printf("Build version: %s\n", checkNA(buildVersion))
-	fmt.Printf("Build date: %s\n", checkNA(buildDate))
-	fmt.Printf("Build commint: %s\n", checkNA(buildCommit))
+	fmt.Printf("Build version: %s\n", utils.CheckNA(buildVersion))
+	fmt.Printf("Build date: %s\n", utils.CheckNA(buildDate))
+	fmt.Printf("Build commint: %s\n", utils.CheckNA(buildCommit))
 
 	cfg := new(config)
 	flag.StringVar(&cfg.Addr, "a", "127.0.0.1:8080", "address to listen on")
