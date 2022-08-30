@@ -18,15 +18,18 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
+	var err error
 	for _, file := range pass.Files {
 		if file.Name.Name == "main" {
-			exitCheck(file, pass)
+			err = exitCheck(file, pass)
 		}
 	}
-	return nil, nil
+	return nil, err
 }
 
-func exitCheck(file *ast.File, pass *analysis.Pass) {
+func exitCheck(file *ast.File, pass *analysis.Pass) error {
+	var err error
+
 	ast.Inspect(file, func(node ast.Node) bool {
 		for _, v := range file.Decls {
 			if mainFnc, ok := v.(*ast.FuncDecl); ok {
@@ -57,6 +60,7 @@ func exitCheck(file *ast.File, pass *analysis.Pass) {
 												Pos:     x.Pos(),
 												Message: "direct function call `os.Exit()` in main package",
 											})
+											err = fmt.Errorf("direct function call `os.Exit()` in main package")
 										}
 									}
 								}
@@ -69,4 +73,6 @@ func exitCheck(file *ast.File, pass *analysis.Pass) {
 		}
 		return true
 	})
+
+	return err
 }

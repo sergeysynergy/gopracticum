@@ -1,6 +1,7 @@
 package exitcheck
 
 import (
+	"github.com/stretchr/testify/assert"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -15,19 +16,52 @@ func TestOsexit(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Ok",
-			src:     `package main`,
+			name: "Ok",
+			src: `package may
+func main() {
+	os.Exit(0)
+}
+`,
 			wantErr: false,
 		},
 		{
-			name:    "Not main package",
-			src:     `package shmain`,
-			wantErr: true,
+			name: "Not main package",
+			src: `package may
+func main() {
+	kek := os.Exit(1)
+}
+`,
+			wantErr: false,
 		},
 		{
-			name:    "No main function in package main",
-			src:     `package main`,
-			wantErr: true,
+			name: "No main function in package main",
+			src: `package main
+
+import "fmt"
+
+func may() {
+	kek := os.Exit(1)
+    fmt.Println(kek)
+}
+`,
+			wantErr: false,
+		},
+		{
+			name: "Indirect os.Exit() call",
+			src: `package main
+
+import "fmt"
+
+func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("panic occurred:", err)
+		}
+	}()
+	//_ := os.Exit(1)
+}
+`,
+			wantErr: false,
 		},
 	}
 
@@ -42,13 +76,13 @@ func TestOsexit(t *testing.T) {
 				Analyzer: Analyzer,
 				Files:    []*ast.File{f},
 			}
-			run(pass)
+			_, err = pass.Analyzer.Run(pass)
 
-			//if tt.wantErr {
-			//	assert.Errorf(t, err, "direct function call `os.Exit()` in main package")
-			//} else {
-			//	assert.NoError(t, err)
-			//}
+			if tt.wantErr {
+				assert.Errorf(t, err, "direct function call `os.Exit()` in main package")
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
