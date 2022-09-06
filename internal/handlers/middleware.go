@@ -59,3 +59,22 @@ func gzipCompressor(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(fn)
 }
+
+func decryptor(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		// расшифровываем тело запроса
+		//if r.Header.Get("Content-Encoding") == "gzip" {
+		//	gz, err := gzip.NewReader(r.Body)
+		//	if err != nil {
+		//		http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	} else {
+		//		r.Body = gz
+		//	}
+		//	defer gz.Close()
+		//}
+
+		next.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
+}

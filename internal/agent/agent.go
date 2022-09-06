@@ -3,6 +3,7 @@ package agent
 
 import (
 	"context"
+	"crypto/rsa"
 	"github.com/go-resty/resty/v2"
 	"log"
 	"math/rand"
@@ -22,6 +23,7 @@ type Agent struct {
 	protocol       string
 	addr           string
 	key            string
+	publicKey      *rsa.PublicKey
 }
 
 type Option func(agent *Agent)
@@ -55,6 +57,12 @@ func New(opts ...Option) *Agent {
 
 	// вернуть измененный экземпляр Server
 	return a
+}
+
+func WithPublicKey(key *rsa.PublicKey) Option {
+	return func(a *Agent) {
+		a.publicKey = key
+	}
 }
 
 func WithAddress(addr string) Option {

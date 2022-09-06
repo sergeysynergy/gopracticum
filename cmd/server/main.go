@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"github.com/sergeysynergy/metricser/pkg/utils"
 	"log"
 	//_ "net/http/pprof" // подключаем пакет pprof
@@ -22,6 +23,7 @@ type config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	Key           string        `env:"KEY"`
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
+	CryptoKey     string        `env:"CRYPTO_KEY"`
 }
 
 var (
@@ -45,6 +47,7 @@ func main() {
 	flag.StringVar(&cfg.Key, "k", "", "sign key")
 	flag.DurationVar(&cfg.StoreInterval, "i", 300*time.Second, "interval for saving to file")
 	flag.BoolVar(&cfg.Restore, "r", true, "restore metrics from file")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "path to file with public key")
 	flag.Parse()
 
 	err := env.Parse(cfg)
@@ -64,11 +67,17 @@ func main() {
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
+	privateKey, err := crypter.OpenPrivate(cfg.CryptoKey)
+	if err != nil {
+		log.Println("[WARNING] Failed to get private key - ", err)
+	}
+
 	// Подключим обработчики запросов.
 	h := handlers.New(
 		handlers.WithFileStorer(fileStorer),
 		handlers.WithDBStorer(dbStorer),
 		handlers.WithKey(cfg.Key),
+		handlers.WithPrivateKey(privateKey),
 	)
 
 	// Проинициализируем сервер с использованием ранее объявленных обработчиков и файлового хранилища.

@@ -2,8 +2,10 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"log"
 	"net/http"
 	"time"
@@ -86,13 +88,33 @@ func (a *Agent) report(ctx context.Context) {
 
 func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Response, error) {
 	endpoint := a.protocol + a.addr + "/updates/"
+	//encoding := "gzip"
+	body, err := json.Marshal(hm)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal body while sending report: %w", err)
+	}
+
+	if a.publicKey != nil {
+		jsonHm, errMarsh := json.Marshal(hm)
+		if errMarsh != nil {
+			log.Println("[WARNING] Failed to marshal body for encryption", err)
+		} else {
+			bodyEncrypt, errEncrypt := crypter.Encrypt(a.publicKey, jsonHm)
+			if errEncrypt != nil {
+				log.Println("[WARNING] Failed to marshal body for encryption", err)
+			} else {
+				body = bodyEncrypt
+				//encoding = "gzip | crypted"
+			}
+		}
+	}
 
 	resp, err := a.client.R().
 		SetHeader("Accept", "application/json").
 		SetHeader("Accept-Encoding", "gzip").
 		SetHeader("Content-Type", "application/json").
 		SetContext(ctx).
-		SetBody(hm).
+		SetBody(body).
 		Post(endpoint)
 
 	if err != nil {
