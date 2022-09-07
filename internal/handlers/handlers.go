@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -27,6 +28,7 @@ type Handler struct {
 	fileStorer storage.FileStorer
 	dbStorer   storage.DBStorer
 	key        string
+	privateKey *rsa.PrivateKey
 }
 
 type Option func(handler *Handler)
@@ -37,14 +39,6 @@ func New(opts ...Option) *Handler {
 		// создадим новый роутер
 		router: chi.NewRouter(),
 	}
-
-	// зададим встроенные middleware, чтобы улучшить стабильность приложения
-	h.router.Use(gzipDecompressor)
-	h.router.Use(gzipCompressor)
-	h.router.Use(middleware.RequestID)
-	h.router.Use(middleware.RealIP)
-	h.router.Use(middleware.Logger)
-	h.router.Use(middleware.Recoverer)
 
 	// применяем в цикле каждую опцию
 	for _, opt := range opts {
@@ -64,11 +58,25 @@ func New(opts ...Option) *Handler {
 		h.storer = storage.New()
 	}
 
+	// Зададим middleware, чтобы улучшить стабильность приложения и расширить его функциональность.
+	h.router.Use(middleware.Compress(5, "gzip"))
+	//h.router.Use(decrypt(h.privateKey))
+	h.router.Use(middleware.RequestID)
+	h.router.Use(middleware.RealIP)
+	h.router.Use(middleware.Logger)
+	h.router.Use(middleware.Recoverer)
+
 	// определим маршруты
 	h.setRoutes()
 
 	// вернуть измененный экземпляр Handler
 	return h
+}
+
+func WithPrivateKey(key *rsa.PrivateKey) Option {
+	return func(h *Handler) {
+		h.privateKey = key
+	}
 }
 
 // WithFileStorer Использует переданное файловое хранилище.
