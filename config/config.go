@@ -64,6 +64,36 @@ func NewServerConf() *ServerConf {
 	return defaultCfg
 }
 
+type AgentConfig struct {
+	Addr           string        `env:"ADDRESS"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	Key            string        `env:"KEY"`
+	CryptoKey      string        `env:"CRYPTO_KEY"`
+	ConfigFile     string
+}
+
+func NewAgentConf() *AgentConfig {
+	defaultCfg := &AgentConfig{
+		Addr:           "127.0.0.1:8080",
+		ReportInterval: 10 * time.Second,
+		PollInterval:   2 * time.Second,
+	}
+
+	if cfgFile, ok := getConfigFile(); ok {
+		cfg := &AgentConfig{}
+		err := LoadFromFile(cfgFile, cfg)
+		if err != nil {
+			log.Println("[ERROR]", err)
+		} else {
+			log.Println("[DEBUG] Using config file:", cfgFile)
+			return cfg
+		}
+	}
+
+	return defaultCfg
+}
+
 // Получим путь к файлу из аргументов или переменной окружения.
 func getConfigFile() (string, bool) {
 	cfgFile, ok := os.LookupEnv("CONFIG")
