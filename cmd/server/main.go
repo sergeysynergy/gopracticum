@@ -17,12 +17,14 @@ import (
 )
 
 type config struct {
-	Addr          string        `env:"ADDRESS"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	Key           string        `env:"KEY"`
-	DatabaseDSN   string        `env:"DATABASE_DSN"`
+	Key        string `env:"KEY"`
+	ConfigFile string
+
+	Addr          string        `env:"ADDRESS" json:"address"`
+	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
+	Restore       bool          `env:"RESTORE" json:"restore"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
+	DatabaseDSN   string        `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKey     string        `env:"CRYPTO_KEY" json:"crypto_key"`
 }
 
