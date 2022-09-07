@@ -3,11 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
@@ -29,6 +30,14 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	if h.privateKey != nil {
+		reqBody, err = crypter.Decrypt(h.privateKey, reqBody)
+		if err != nil {
+			h.errorJSON(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 
 	mcs := make([]metrics.Metrics, 0)
 	err = json.Unmarshal(reqBody, &mcs)
