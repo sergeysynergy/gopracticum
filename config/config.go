@@ -3,7 +3,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -29,7 +31,7 @@ func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 	return nil
 }
 
-type Config struct {
+type ServerConf struct {
 	Addr          string        `env:"ADDRESS" json:"address"`
 	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
 	Restore       bool          `env:"RESTORE" json:"restore"`
@@ -40,32 +42,69 @@ type Config struct {
 	ConfigFile    string
 }
 
-func New() *Config {
-	cfg := &Config{
-		Addr:      "127.0.0.1:8080",
-		StoreFile: "/tmp/devops-metrics-pgsql.json",
-		Restore:   true,
+func NewServerConf() *ServerConf {
+	defaultCfg := &ServerConf{
+		Addr:          "127.0.0.1:8080",
+		StoreFile:     "/tmp/devops-metrics-pgsql.json",
+		Restore:       true,
+		StoreInterval: 300 * time.Second,
 	}
-	cfg.StoreInterval = 300 * time.Second
 
-	return cfg
+	if cfgFile, ok := getConfigFile(); ok {
+		cfg := &ServerConf{}
+		err := LoadFromFile(cfgFile, cfg)
+		if err != nil {
+			log.Println("[ERROR]", err)
+		} else {
+			log.Println("[DEBUG] Using config file:", cfgFile)
+			return cfg
+		}
+	}
+
+	return defaultCfg
+}
+
+// Получим путь к файлу из аргументов или переменной окружения.
+func getConfigFile() (string, bool) {
+	cfgFile, ok := os.LookupEnv("CONFIG")
+	if !ok {
+		for k, v := range os.Args[1:] {
+			if v == "-c" && len(os.Args) > k+2 {
+				cfgFile = os.Args[k+2]
+			}
+			if v == "-config" && len(os.Args) > k+2 {
+				cfgFile = os.Args[k+2]
+			}
+			if strings.HasPrefix(v, "-c=") {
+				cfgFile = os.Args[k+1][3:]
+			}
+			if strings.HasPrefix(v, "-config=") {
+				cfgFile = os.Args[k+1][8:]
+			}
+		}
+	}
+
+	if cfgFile == "" {
+		return cfgFile, false
+	}
+
+	return cfgFile, true
 }
 
 // LoadFromFile Получаем значения конфига из JSON-файла.
-func LoadFromFile(filePath string) (*Config, error) {
+func LoadFromFile(filePath string, cfg interface{}) (err error) {
 	if filePath == "" {
-		return nil, fmt.Errorf("empty file name")
+		return fmt.Errorf("empty file name")
 	}
 	f, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
+		return fmt.Errorf("failed to open config file: %w", err)
 	}
 
-	cfg := &Config{}
 	err = json.Unmarshal(f, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config file: %w", err)
+		return fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
 
-	return cfg, nil
+	return nil
 }
