@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"log"
 	//_ "net/http/pprof" // подключаем пакет pprof
 	"time"
@@ -17,6 +18,7 @@ type Config struct {
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 	Key            string        `env:"KEY"`
+	CryptoKey      string        `env:"CRYPTO_KEY"`
 }
 
 var (
@@ -38,11 +40,17 @@ func main() {
 	flag.DurationVar(&cfg.ReportInterval, "r", 10*time.Second, "interval for sending metrics to the server")
 	flag.DurationVar(&cfg.PollInterval, "p", 2*time.Second, "update metrics interval")
 	flag.StringVar(&cfg.Key, "k", "", "sign key")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "path to file with public key")
 	flag.Parse()
 
 	err := env.Parse(cfg)
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	pubKey, err := crypter.OpenPublic(cfg.CryptoKey)
+	if err != nil {
+		log.Println("[WARNING] Failed to get public key -", err)
 	}
 
 	// создадим агента по сбору и отправке метрик
@@ -52,6 +60,7 @@ func main() {
 		agent.WithReportInterval(cfg.ReportInterval),
 		agent.WithPollInterval(cfg.PollInterval),
 		agent.WithKey(cfg.Key),
+		agent.WithPublicKey(pubKey),
 	)
 
 	//go http.ListenAndServe(":8091", nil) // запускаем сервер для нужд профилирования
