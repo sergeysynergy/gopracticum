@@ -3,6 +3,7 @@ package crypter
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -18,14 +19,18 @@ func Encrypt(pubKey *rsa.PublicKey, msg []byte) ([]byte, error) {
 	// crypto/rand.Reader источник криптостойкой случайной последовательности
 	rnd := rand.Reader
 
+	buf := bytes.Buffer{}
+	w := bufio.NewWriterSize(&buf, 32)
+	// Сообщение должно быть не длиннее, чем длина публичного ключа минус 11 байт.
 	cipherText, err := rsa.EncryptPKCS1v15(rnd, pubKey, msg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error from encryption: %s\n", err)
 		return nil, err
 	}
+	w.Write(cipherText)
 
 	// Так как используется источник случайной последовательности байт, результат всё время будет разный.
-	return cipherText, nil
+	return buf.Bytes(), nil
 }
 
 // Decrypt Дешифруем набор байт посредством приватного ключа.
@@ -41,22 +46,18 @@ func Decrypt(privKey *rsa.PrivateKey, cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// CreatePair создаёт и записывает в файлы пару ассиметричных ключей шифрования.
-func CreatePair(keySize int) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
-	if err != nil {
-		fmt.Println(err.Error)
-		os.Exit(1)
-	}
-	publicKey := &privateKey.PublicKey
-	fmt.Println("Private Key: ", privateKey)
-	fmt.Println("Public key: ", publicKey)
+// CreateKey создаёт приватный RSA-ключ указанного размера, который содержит в себе публичную пару.
+func CreateKey(keySize int) (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, keySize)
+}
 
-	pemPrivateFile, err := os.Create("private_key.pem")
+// SavePemKeys Записывает в файлы пару ассиметричных RSA-ключей в формате pem.
+func SavePemKeys(privateKey *rsa.PrivateKey, privateKeyPath, publicKeyPath string) (err error) {
+	// Сохраним в файл приватный ключ.
+	pemPrivateFile, err := os.Create(privateKeyPath)
 	defer pemPrivateFile.Close()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
 	var pemPrivateBlock = &pem.Block{
@@ -66,15 +67,14 @@ func CreatePair(keySize int) {
 
 	err = pem.Encode(pemPrivateFile, pemPrivateBlock)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
-	pemPublicFile, err := os.Create("public_key.pub")
+	// Сохраним в файл публичный ключ.
+	pemPublicFile, err := os.Create(publicKeyPath)
 	defer pemPublicFile.Close()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
 	var pemPublicBlock = &pem.Block{
@@ -84,9 +84,10 @@ func CreatePair(keySize int) {
 
 	err = pem.Encode(pemPublicFile, pemPublicBlock)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 // OpenPrivate получает приватный ключ шифрования из файла.

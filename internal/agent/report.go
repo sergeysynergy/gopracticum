@@ -21,7 +21,7 @@ func (a *Agent) reportTicker(ctx context.Context) {
 		case <-ticker.C:
 			a.report(ctx)
 		case <-ctx.Done():
-			log.Println("Штатное завершение работы отправки метрик")
+			log.Println("[INFO] Штатное завершение работы отправки метрик")
 			ticker.Stop()
 			return
 		}
@@ -83,12 +83,12 @@ func (a *Agent) report(ctx context.Context) {
 		return
 	}
 
-	log.Println("Выполнена отправка отчёта")
+	log.Println("[INFO] Выполнена отправка отчёта")
 }
 
 func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Response, error) {
 	endpoint := a.protocol + a.addr + "/updates/"
-	//encoding := "gzip"
+	encoding := ""
 	body, err := json.Marshal(hm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal body while sending report: %w", err)
@@ -97,14 +97,15 @@ func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Re
 	if a.publicKey != nil {
 		jsonHm, errMarsh := json.Marshal(hm)
 		if errMarsh != nil {
-			log.Println("[WARNING] Failed to marshal body for encryption", err)
+			log.Println("[WARNING] Не удалось конвертировать метрики в структуру JSON", err)
 		} else {
 			bodyEncrypt, errEncrypt := crypter.Encrypt(a.publicKey, jsonHm)
 			if errEncrypt != nil {
-				log.Println("[WARNING] Failed to marshal body for encryption", err)
+				log.Println("[WARNING] Не удалось зашифровать тело запроса", err)
 			} else {
 				body = bodyEncrypt
-				//encoding = "gzip | crypted"
+				encoding = "crypted"
+				log.Println("[INFO] Тело запроса было зашифровано")
 			}
 		}
 	}
@@ -113,6 +114,7 @@ func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Re
 		SetHeader("Accept", "application/json").
 		SetHeader("Accept-Encoding", "gzip").
 		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", encoding).
 		SetContext(ctx).
 		SetBody(body).
 		Post(endpoint)

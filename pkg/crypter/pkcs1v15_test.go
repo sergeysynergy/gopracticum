@@ -1,26 +1,42 @@
 // Package crypter Пакет реализует шифрование на основе ассиметричной пары ключей.
 package crypter
 
-import "testing"
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 // Этот файл реализует шифрование и дешифрование с использованием заполнения PKCS #1 v1.5.
 
 func TestEncryptDecrypt(t *testing.T) {
-	CreatePair(2 << 11)
+	private, err := CreateKey(2 << 8)
+	assert.NoError(t, err)
 
-	//pubKey := openPublic()
-	//secretMessage := []byte("send reinforcements, we're going to advance")
-	//cipherText, err := encrypt(pubKey, secretMessage)
-	//if err != nil {
-	//	log.Fatalln("Failed to encrypt", err)
-	//}
-	//fmt.Printf("Ciphertext: %x\n", cipherText)
+	privatePath := "/tmp/private.pem"
+	pubPath := "/tmp/pub.pub"
+	err = SavePemKeys(private, privatePath, pubPath)
+	assert.NoError(t, err)
 
-	//privKey := openPrivate()
-	//plainText, err := decrypt(privKey, cipherText)
-	//if err != nil {
-	//	log.Fatalln("Failed to decrypt", err)
-	//}
-	//fmt.Printf("Plain text: %s\n", plainText)
-	//fmt.Printf("Plain text: %x\n", string(plainText))
+	privateFromFile, err := OpenPrivate(privatePath)
+	assert.NoError(t, err)
+	assert.Equal(t, private, privateFromFile)
+
+	pubFromFile, err := OpenPublic(pubPath)
+	assert.NoError(t, err)
+	assert.Equal(t, &private.PublicKey, pubFromFile)
+
+	//secretMessage := []byte("send reinforcements, we're going to advance, to big advance")
+	secretMessage := []byte("send reinforcements, we're going to advance")
+	cipherText, err := Encrypt(&private.PublicKey, secretMessage)
+	assert.NoError(t, err)
+
+	plainText, err := Decrypt(private, cipherText)
+	assert.NoError(t, err)
+	assert.Equal(t, secretMessage, plainText)
+
+	fmt.Printf("Plain text: %s\n", plainText)
+
+	//os.Remove(privatePath)
+	//os.Remove(pubPath)
 }

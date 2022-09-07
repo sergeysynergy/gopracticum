@@ -1,0 +1,8 @@
+{
+  "address": "localhost:8080",
+  "store_file": "/tmp/devops-metrics-pgsql.json",
+  "restore": true,
+  "database_dsn": "user=zs password=Passw0rd33 host=localhost port=5432 dbname=metrics",
+  "crypto_key": "../../keys/private_key.pem",
+  "store_interval": "1s"
+}

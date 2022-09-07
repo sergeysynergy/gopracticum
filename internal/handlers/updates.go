@@ -3,12 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"io/ioutil"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 

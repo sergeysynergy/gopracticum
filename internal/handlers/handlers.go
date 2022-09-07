@@ -40,15 +40,6 @@ func New(opts ...Option) *Handler {
 		router: chi.NewRouter(),
 	}
 
-	// зададим встроенные middleware, чтобы улучшить стабильность приложения
-	h.router.Use(gzipDecompressor)
-	h.router.Use(gzipCompressor)
-	//h.router.Use(decryptor)
-	h.router.Use(middleware.RequestID)
-	h.router.Use(middleware.RealIP)
-	h.router.Use(middleware.Logger)
-	h.router.Use(middleware.Recoverer)
-
 	// применяем в цикле каждую опцию
 	for _, opt := range opts {
 		// *Handler как аргумент
@@ -66,6 +57,14 @@ func New(opts ...Option) *Handler {
 		log.Println("default storer chosen")
 		h.storer = storage.New()
 	}
+
+	// Зададим middleware, чтобы улучшить стабильность приложения и расширить его функциональность.
+	h.router.Use(middleware.Compress(5, "gzip"))
+	//h.router.Use(decrypt(h.privateKey))
+	h.router.Use(middleware.RequestID)
+	h.router.Use(middleware.RealIP)
+	h.router.Use(middleware.Logger)
+	h.router.Use(middleware.Recoverer)
 
 	// определим маршруты
 	h.setRoutes()

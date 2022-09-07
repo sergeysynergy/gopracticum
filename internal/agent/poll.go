@@ -19,7 +19,7 @@ func (a *Agent) pollTicker(ctx context.Context) {
 		case <-ticker.C:
 			a.pollUpdate()
 		case <-ctx.Done():
-			log.Println("Штатное завершение работы обновления метрик")
+			log.Println("[INFO] Штатное завершение работы обновления метрик")
 			ticker.Stop()
 			return
 		}
@@ -71,5 +71,5 @@ func (a *Agent) pollUpdate() {
 		a.handleError(fmt.Errorf("ошибка обновления метрик - %w", err))
 	}
 
-	log.Println("Выполнено обновление метрик")
+	log.Println("[INFO] Выполнено обновление метрик")
 }

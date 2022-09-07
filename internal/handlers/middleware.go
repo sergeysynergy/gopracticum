@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"compress/gzip"
+	"crypto/rsa"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -60,21 +63,91 @@ func gzipCompressor(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func decryptor(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		// расшифровываем тело запроса
-		//if r.Header.Get("Content-Encoding") == "gzip" {
-		//	gz, err := gzip.NewReader(r.Body)
-		//	if err != nil {
-		//		http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	} else {
-		//		r.Body = gz
-		//	}
-		//	defer gz.Close()
-		//}
+//func (c *Compressor) Handler(next http.Handler) http.Handler {
+//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//		encoder, encoding, cleanup := c.selectEncoder(r.Header, w)
+//
+//		cw := &compressResponseWriter{
+//			ResponseWriter:   w,
+//			w:                w,
+//			contentTypes:     c.allowedTypes,
+//			contentWildcards: c.allowedWildcards,
+//			encoding:         encoding,
+//			compressable:     false, // determined in post-handler
+//		}
+//		if encoder != nil {
+//			cw.w = encoder
+//		}
+//		// Re-add the encoder to the pool if applicable.
+//		defer cleanup()
+//		defer cw.Close()
+//
+//		next.ServeHTTP(cw, r)
+//	})
+//}
 
-		next.ServeHTTP(w, r)
+//func Compress(level int, types ...string) func(next http.Handler) http.Handler {
+//	compressor := NewCompressor(level, types...)
+//	return compressor.Handler
+//}
+
+//func Compress(level int) func(next http.Handler) http.Handler {
+func decrypt(privateKey *rsa.PrivateKey) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			//if r.Header.Get("Content-Encoding") == "gzip" {
+			//	gz, err := gzip.NewReader(r.Body)
+			//	if err != nil {
+			//		http.Error(w, err.Error(), http.StatusInternalServerError)
+			//	} else {
+			//		r.Body = gz
+			//	}
+			//	defer gz.Close()
+			//}
+
+			if strings.Contains(r.Header.Get("Content-Encoding"), "crypted") && privateKey != nil {
+				reqBody, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					log.Println("[ERROR] Failed to read body - ", err)
+					return
+				}
+				//defer r.Body.Close()
+
+				if privateKey != nil {
+					reqBody, err = crypter.Decrypt(privateKey, reqBody)
+					if err != nil {
+						log.Println("[ERROR] Failed to decrypt body - ", err)
+						return
+					}
+					log.Println("[INFO] Body has been successfully decrypted")
+				}
+				//r.Body.Read(reqBody)
+
+				//reqBody, err := ioutil.ReadAll(r.Body)
+				//if err != nil {
+				//	log.Println("[ERROR] Failed to read body - ", err)
+				//	return
+				//}
+				//defer r.Body.Close()
+
+				//plainBody, err := crypter.Decrypt(privateKey, reqBody)
+				//if err != nil {
+				//	log.Println("[ERROR] Failed to decrypt body - ", err)
+				//	return
+				//}
+				//r.Body.Read(plainBody)
+				//log.Println("[INFO] Body has been successfully decrypted")
+
+				//mcs := make([]metrics.Metrics, 0)
+				//err = json.Unmarshal(reqBody, &mcs)
+				//if err != nil {
+				//	fmt.Println("EEEEEEEEERRRRRRRr", err)
+				//	return
+				//}
+				//log.Printf("[DEBUG] %#v\n", mcs)
+			}
+
+			next.ServeHTTP(w, r)
+		})
 	}
-
-	return http.HandlerFunc(fn)
 }
