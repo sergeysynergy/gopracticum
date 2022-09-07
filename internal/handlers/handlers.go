@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -27,6 +28,7 @@ type Handler struct {
 	fileStorer storage.FileStorer
 	dbStorer   storage.DBStorer
 	key        string
+	privateKey *rsa.PrivateKey
 }
 
 type Option func(handler *Handler)
@@ -69,6 +71,12 @@ func New(opts ...Option) *Handler {
 
 	// вернуть измененный экземпляр Handler
 	return h
+}
+
+func WithPrivateKey(key *rsa.PrivateKey) Option {
+	return func(h *Handler) {
+		h.privateKey = key
+	}
 }
 
 // WithFileStorer Использует переданное файловое хранилище.
