@@ -11,7 +11,7 @@ type Duration struct {
 	time.Duration
 }
 
-func (d Duration) MarshalJSON() ([]byte, error) {
+func (d *Duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.String())
 }
 
@@ -30,13 +30,13 @@ func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 }
 
 type Config struct {
-	Addr          string   `env:"ADDRESS" json:"address"`
-	StoreFile     string   `env:"STORE_FILE" json:"store_file"`
-	Restore       bool     `env:"RESTORE" json:"restore"`
-	StoreInterval Duration `env:"STORE_INTERVAL" json:"store_interval"`
-	DatabaseDSN   string   `env:"DATABASE_DSN" json:"database_dsn"`
-	CryptoKey     string   `env:"CRYPTO_KEY" json:"crypto_key"`
-	Key           string   `env:"KEY"`
+	Addr          string        `env:"ADDRESS" json:"address"`
+	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
+	Restore       bool          `env:"RESTORE" json:"restore"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
+	DatabaseDSN   string        `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKey     string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	Key           string        `env:"KEY"`
 	ConfigFile    string
 }
 
@@ -46,7 +46,7 @@ func New() *Config {
 		StoreFile: "/tmp/devops-metrics-pgsql.json",
 		Restore:   true,
 	}
-	cfg.StoreInterval.Duration = 300 * time.Second
+	cfg.StoreInterval = 300 * time.Second
 
 	return cfg
 }
