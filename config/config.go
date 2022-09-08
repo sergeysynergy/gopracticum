@@ -32,14 +32,15 @@ func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 }
 
 type ServerConf struct {
-	Addr          string        `env:"ADDRESS" json:"address"`
-	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
-	Restore       bool          `env:"RESTORE" json:"restore"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
-	DatabaseDSN   string        `env:"DATABASE_DSN" json:"database_dsn"`
-	CryptoKey     string        `env:"CRYPTO_KEY" json:"crypto_key"`
-	Key           string        `env:"KEY"`
-	ConfigFile    string
+	Addr            string        `env:"ADDRESS" json:"address"`
+	StoreFile       string        `env:"STORE_FILE" json:"store_file"`
+	Restore         bool          `env:"RESTORE" json:"restore"`
+	MyStoreInterval Duration      `json:"store_interval"`
+	StoreInterval   time.Duration `env:"STORE_INTERVAL"`
+	DatabaseDSN     string        `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKey       string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	Key             string        `env:"KEY"`
+	ConfigFile      string
 }
 
 func NewServerConf() *ServerConf {
