@@ -51,19 +51,25 @@ func exitCheck(file *ast.File, pass *analysis.Pass) error {
 					// Вариант 2: ищем присваивания функции os.Exit()
 					case *ast.AssignStmt:
 						for i := 0; i < len(x.Lhs); i++ {
-							if _, ok := x.Lhs[i].(*ast.Ident); ok {
-								// вызов функции справа
-								if call, ok := x.Rhs[i].(*ast.CallExpr); ok {
-									if fn, ok := call.Fun.(*ast.SelectorExpr); ok {
-										if fmt.Sprint(fn.X) == "os" && fn.Sel.Name == "Exit" {
-											pass.Report(analysis.Diagnostic{
-												Pos:     x.Pos(),
-												Message: "direct function call `os.Exit()` in main package",
-											})
-											err = fmt.Errorf("direct function call `os.Exit()` in main package")
-										}
-									}
-								}
+							if _, okAss := x.Lhs[i].(*ast.Ident); !okAss {
+								continue
+							}
+							// вызов функции справа
+							call, okAss := x.Rhs[i].(*ast.CallExpr)
+							if !okAss {
+								continue
+							}
+							fn, okCall := call.Fun.(*ast.SelectorExpr)
+							if !okCall {
+								continue
+							}
+							// непосредственная проверка элементов дерева на соответствие названию os.Exit
+							if fmt.Sprint(fn.X) == "os" && fn.Sel.Name == "Exit" {
+								pass.Report(analysis.Diagnostic{
+									Pos:     x.Pos(),
+									Message: "direct function call `os.Exit()` in main package",
+								})
+								err = fmt.Errorf("direct function call `os.Exit()` in main package")
 							}
 						}
 					}
