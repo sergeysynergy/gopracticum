@@ -66,12 +66,14 @@ func NewServerConf() *ServerConf {
 }
 
 type AgentConfig struct {
-	Addr           string        `env:"ADDRESS"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	Key            string        `env:"KEY"`
-	CryptoKey      string        `env:"CRYPTO_KEY"`
-	ConfigFile     string
+	Addr             string        `env:"ADDRESS" json:"address"`
+	MyReportInterval Duration      `json:"report_interval"`
+	MyPollInterval   Duration      `json:"poll_interval"`
+	ReportInterval   time.Duration `env:"REPORT_INTERVAL"`
+	PollInterval     time.Duration `env:"POLL_INTERVAL"`
+	Key              string        `env:"KEY"`
+	CryptoKey        string        `env:"CRYPTO_KEY"`
+	ConfigFile       string
 }
 
 func NewAgentConf() *AgentConfig {
