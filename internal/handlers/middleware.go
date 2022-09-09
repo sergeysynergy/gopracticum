@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"compress/gzip"
+	"crypto/rsa"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -58,4 +62,31 @@ func gzipCompressor(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(fn)
+}
+
+//func Compress(level int) func(next http.Handler) http.Handler {
+func decrypt(privateKey *rsa.PrivateKey) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.Contains(r.Header.Get("Content-Encoding"), "crypted") && privateKey != nil {
+				reqBody, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					log.Println("[ERROR] Failed to read body - ", err)
+					return
+				}
+				defer r.Body.Close()
+
+				plainBody, err := crypter.Decrypt(privateKey, reqBody)
+				if err != nil {
+					log.Println("[ERROR] Failed to decrypt body - ", err)
+					return
+				}
+
+				r.Body = io.NopCloser(bytes.NewReader(plainBody))
+				log.Println("[INFO] Body has been successfully decrypted")
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
