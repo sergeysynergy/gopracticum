@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/rsa"
+	"fmt"
 	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"io"
 	"io/ioutil"
@@ -89,4 +90,14 @@ func decrypt(privateKey *rsa.PrivateKey) func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func cidrCheck(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(":: CIDR CHECK HERE ::")
+
+		next.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
 }

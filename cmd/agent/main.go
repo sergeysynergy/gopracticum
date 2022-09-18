@@ -11,14 +11,6 @@ import (
 	"log"
 )
 
-//type Config struct {
-//	Addr           string        `env:"ADDRESS"`
-//	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-//	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-//	Key            string        `env:"KEY"`
-//	CryptoKey      string        `env:"CRYPTO_KEY"`
-//}
-
 var (
 	buildVersion string
 	buildDate    string
@@ -34,11 +26,6 @@ func main() {
 	fmt.Printf("Build commint: %s\n", utils.CheckNA(buildCommit))
 
 	cfg := config.NewAgentConf()
-	//flag.StringVar(&cfg.Addr, "a", "127.0.0.1:8080", "server address")
-	//flag.DurationVar(&cfg.ReportInterval, "r", 10*time.Second, "interval for sending metrics to the server")
-	//flag.DurationVar(&cfg.PollInterval, "p", 2*time.Second, "update metrics interval")
-	//flag.StringVar(&cfg.Key, "k", "", "sign key")
-	//flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "path to file with public key")
 	flag.StringVar(&cfg.ConfigFile, "c", cfg.ConfigFile, "path to file with public key")
 	flag.StringVar(&cfg.ConfigFile, "config", cfg.ConfigFile, "path to file with public key")
 	flag.StringVar(&cfg.Addr, "a", cfg.Addr, "server address")

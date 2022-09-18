@@ -3,5 +3,6 @@
   "store_file": "/tmp/devops-metrics-pgsql.json",
   "restore": true,
   "database_dsn": "user=zs password=Passw0rd33 host=localhost port=5432 dbname=metrics",
-  "crypto_key": "../../keys/private_key.pem"
+  "crypto_key": "../../keys/private_key.pem",
+  "trusted_subnet": "127.0.0.0"
 }

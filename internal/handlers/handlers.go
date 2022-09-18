@@ -59,6 +59,7 @@ func New(opts ...Option) *Handler {
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
+	h.router.Use(cidrCheck)
 	h.router.Use(gzipDecompressor)
 	h.router.Use(gzipCompressor)
 	h.router.Use(decrypt(h.privateKey))

@@ -55,6 +55,7 @@ func main() {
 	flag.DurationVar(&cfg.StoreInterval, "i", cfg.StoreInterval, "interval for saving to file")
 	flag.BoolVar(&cfg.Restore, "r", cfg.Restore, "restore metrics from file")
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", cfg.CryptoKey, "path to file with public key")
+	flag.StringVar(&cfg.TrustedSubnet, "t", cfg.TrustedSubnet, "CIDR - Classless Inter-Domain Routing")
 	flag.Parse()
 
 	// Перезапишем значения конфига переменными окружения - самый главный приоритет.

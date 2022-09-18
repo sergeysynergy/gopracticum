@@ -53,9 +53,6 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}
-			if m.ID == "CPUutilization1" {
-				log.Println("Updates CPUutilization1:", *m.Value)
-			}
 
 			prm.Gauges[m.ID] = metrics.Gauge(*m.Value)
 		case "counter":

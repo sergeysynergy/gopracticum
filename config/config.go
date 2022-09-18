@@ -40,6 +40,7 @@ type ServerConf struct {
 	DatabaseDSN     string        `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKey       string        `env:"CRYPTO_KEY" json:"crypto_key"`
 	Key             string        `env:"KEY"`
+	TrustedSubnet   string        `env:"TRUSTED_SUBNET"`
 	ConfigFile      string
 }
 
