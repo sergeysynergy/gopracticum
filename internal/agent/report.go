@@ -86,9 +86,12 @@ func (a *Agent) report(ctx context.Context) {
 	log.Println("[INFO] Выполнена отправка отчёта")
 }
 
+// sendReport Отправляет значения всех метрик на сервер.
 func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Response, error) {
-	endpoint := a.protocol + a.addr + "/updates/"
-	encoding := ""
+	endpoint := a.protocol + a.addr + "/updates/" // адрес по которому отправляются метрики на сервер
+	localIP := "127.0.0.1"                        // IP адрес клиента
+	encoding := ""                                // значение указывает зашифровано ли сообщение
+
 	body, err := json.Marshal(hm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal body while sending report: %w", err)
@@ -115,6 +118,7 @@ func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Re
 		SetHeader("Accept-Encoding", "gzip").
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", encoding).
+		SetHeader("X-Real-IP", localIP).
 		SetContext(ctx).
 		SetBody(body).
 		Post(endpoint)

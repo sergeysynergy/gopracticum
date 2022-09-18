@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/rsa"
-	"fmt"
 	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 )
@@ -65,7 +65,6 @@ func gzipCompressor(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-//func Compress(level int) func(next http.Handler) http.Handler {
 func decrypt(privateKey *rsa.PrivateKey) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,12 +91,30 @@ func decrypt(privateKey *rsa.PrivateKey) func(next http.Handler) http.Handler {
 	}
 }
 
-func cidrCheck(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(":: CIDR CHECK HERE ::")
+func cidrCheck(trustedSubnet *net.IPNet) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			// Если задана подсеть, убедимся:
+			// что IP-адрес агента входит в доверенную подсеть.
+			if trustedSubnet.IP != nil && trustedSubnet.Mask != nil {
+				// Распарсим IP клиента.
+				ipStr := r.Header.Get("X-Real-IP")
+				ip := net.ParseIP(ipStr)
+				if ip == nil {
+					raiseJSONedError(w, r, "failed to parse client IP", http.StatusForbidden)
+					return
+				}
 
-		next.ServeHTTP(w, r)
+				// Проверим, входит ли IP клиента в доверенную подсеть.
+				if !trustedSubnet.Contains(ip) {
+					raiseJSONedError(w, r, "client IP not match trusted subnet", http.StatusForbidden)
+					return
+				}
+			}
+
+			next.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(fn)
 	}
-
-	return http.HandlerFunc(fn)
 }

@@ -87,6 +87,7 @@ func main() {
 		handlers.WithDBStorer(dbStorer),
 		handlers.WithKey(cfg.Key),
 		handlers.WithPrivateKey(privateKey),
+		handlers.WithTrustedSubnet(cfg.TrustedSubnet),
 	)
 
 	// Проинициализируем сервер с использованием ранее объявленных обработчиков и файлового хранилища.

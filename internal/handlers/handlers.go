@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
+	"net"
 	"net/http"
 	"sort"
 	"strconv"
-
-	"github.com/sergeysynergy/metricser/internal/storage"
-	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 const (
@@ -23,12 +23,13 @@ const (
 
 // Handler хранит объекты роутов, репозитория и непосредственно бизнес-логики для работы с хранилищем метрик.
 type Handler struct {
-	router     chi.Router
-	storer     storage.Repo
-	fileStorer storage.FileStorer
-	dbStorer   storage.DBStorer
-	key        string
-	privateKey *rsa.PrivateKey
+	router        chi.Router
+	storer        storage.Repo
+	fileStorer    storage.FileStorer
+	dbStorer      storage.DBStorer
+	key           string
+	privateKey    *rsa.PrivateKey
+	trustedSubnet *net.IPNet
 }
 
 type Option func(handler *Handler)
@@ -36,8 +37,8 @@ type Option func(handler *Handler)
 // New Создаёт новый объект JSON API Handler.
 func New(opts ...Option) *Handler {
 	h := &Handler{
-		// создадим новый роутер
-		router: chi.NewRouter(),
+		router:        chi.NewRouter(), // создадим новый роутер
+		trustedSubnet: &net.IPNet{},    // создадим объект доверенной сети
 	}
 
 	// применяем в цикле каждую опцию
@@ -59,7 +60,7 @@ func New(opts ...Option) *Handler {
 	}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
-	h.router.Use(cidrCheck)
+	h.router.Use(cidrCheck(h.trustedSubnet))
 	h.router.Use(gzipDecompressor)
 	h.router.Use(gzipCompressor)
 	h.router.Use(decrypt(h.privateKey))
@@ -73,6 +74,17 @@ func New(opts ...Option) *Handler {
 
 	// вернуть измененный экземпляр Handler
 	return h
+}
+
+func WithTrustedSubnet(cidr string) Option {
+	return func(h *Handler) {
+		_, ipNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.Println("[ERROR] Failed to parse CIDR! Trusted network will NOT BE used -", err)
+			return
+		}
+		h.trustedSubnet = ipNet
+	}
 }
 
 func WithPrivateKey(key *rsa.PrivateKey) Option {
@@ -153,41 +165,3 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(b.Bytes())
 }
-
-// TODO: проверить зачем был нужен метод
-/*
-func (h *Handler) hashCheck(m *metrics.Metrics) error {
-	if h.key == "" {
-		return nil
-	}
-
-	switch m.MType {
-	case "gauge":
-		if m.Value == nil {
-			m.Value = new(float64)
-		}
-
-		mac1 := m.Hash
-		mac2 := metrics.GaugeHash(h.key, m.ID, *m.Value)
-		if mac1 != mac2 {
-			log.Printf(":: mac1 - %s\n", mac1)
-			log.Printf(":: mac2 - %s\n", mac2)
-			return fmt.Errorf("hash check failed for gauge metric")
-		}
-	case "counter":
-		if m.Delta == nil {
-			m.Delta = new(int64)
-		}
-
-		mac1 := m.Hash
-		mac2 := metrics.CounterHash(h.key, m.ID, *m.Delta)
-		if mac1 != mac2 {
-			return fmt.Errorf("hash check failed for counter metric")
-		}
-	default:
-		err := fmt.Errorf("not implemented")
-		return err
-	}
-	return nil
-}
-*/
