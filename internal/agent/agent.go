@@ -2,22 +2,18 @@
 package agent
 
 import (
-	"context"
 	"crypto/rsa"
 	"github.com/go-resty/resty/v2"
-	"log"
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"math/rand"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/domain/storage"
 )
 
 type Agent struct {
 	client         *resty.Client
-	storage        storage.Repo
+	repo           storage.RepoDB
 	pollInterval   time.Duration
 	reportInterval time.Duration
 	protocol       string
@@ -41,7 +37,7 @@ func New(opts ...Option) *Agent {
 
 	a := &Agent{
 		client:         resty.New(),
-		storage:        storage.New(),
+		repo:           memory.New(),
 		pollInterval:   defaultPollInterval,
 		reportInterval: defaultReportInterval,
 		protocol:       defaultProtocol,
@@ -93,26 +89,4 @@ func WithKey(key string) Option {
 	return func(a *Agent) {
 		a.key = key
 	}
-}
-
-func (a *Agent) Run() {
-	ctx, cancel := context.WithCancel(context.Background())
-	// Функцию cancel нужно обязательно выполнить в коде, иначе сборщик мусора не удалит созданный дочерний контекст
-	// и произойдёт утечка памяти.
-	defer cancel()
-
-	go a.pollTicker(ctx)
-	go a.gopsutilTicker(ctx)
-	go a.reportTicker(ctx)
-
-	// Агент должен штатно завершаться по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	sig := <-c
-	log.Println("Получен сигнал завершения работы:", sig)
-	log.Println("Работа агента штатно завершена")
-}
-
-func (a *Agent) handleError(err error) {
-	log.Println("Ошибка -", err)
 }

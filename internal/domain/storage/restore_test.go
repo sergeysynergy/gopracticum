@@ -1,11 +1,6 @@
 package storage
 
-import (
-	"fmt"
-	"github.com/sergeysynergy/metricser/pkg/metrics"
-	"log"
-)
-
+/*
 func ExampleStorage_Restore() {
 	st := New()
 
@@ -27,3 +22,4 @@ func ExampleStorage_Restore() {
 	}
 	fmt.Printf("Metrics after restore: %#v", prm)
 }
+*/

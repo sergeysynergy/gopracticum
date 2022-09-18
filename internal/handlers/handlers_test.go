@@ -2,7 +2,8 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/sergeysynergy/metricser/internal/filestore"
+	"github.com/sergeysynergy/metricser/internal/data/repository/filestore"
+	"github.com/sergeysynergy/metricser/internal/domain/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -10,7 +11,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 

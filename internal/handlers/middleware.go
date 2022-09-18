@@ -97,17 +97,19 @@ func cidrCheck(trustedSubnet *net.IPNet) func(next http.Handler) http.Handler {
 			// Если задана подсеть, убедимся:
 			// что IP-адрес агента входит в доверенную подсеть.
 			if trustedSubnet.IP != nil && trustedSubnet.Mask != nil {
+				trustedErr := "trusted subnet check error - "
+
 				// Распарсим IP клиента.
 				ipStr := r.Header.Get("X-Real-IP")
 				ip := net.ParseIP(ipStr)
 				if ip == nil {
-					raiseJSONedError(w, r, "failed to parse client IP", http.StatusForbidden)
+					raiseJSONedError(w, r, trustedErr+"failed to parse client IP", http.StatusForbidden)
 					return
 				}
 
 				// Проверим, входит ли IP клиента в доверенную подсеть.
 				if !trustedSubnet.Contains(ip) {
-					raiseJSONedError(w, r, "client IP not match trusted subnet", http.StatusForbidden)
+					raiseJSONedError(w, r, trustedErr+"client IP not match trusted subnet", http.StatusForbidden)
 					return
 				}
 			}

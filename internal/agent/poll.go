@@ -66,7 +66,7 @@ func (a *Agent) pollUpdate() {
 
 	prm.Counters[metrics.PollCount] = 1
 
-	err := a.storage.PutMetrics(prm)
+	err := a.repo.PutMetrics(prm)
 	if err != nil {
 		a.handleError(fmt.Errorf("ошибка обновления метрик - %w", err))
 	}

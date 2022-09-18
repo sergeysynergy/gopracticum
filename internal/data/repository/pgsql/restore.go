@@ -5,17 +5,17 @@ import (
 	"log"
 )
 
-func (s *Storage) Restore(m metrics.ProxyMetrics) error {
-	tx, err := s.db.Begin()
+func (r *Repo) Restore(m metrics.ProxyMetrics) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	txGaugeUpdate := tx.StmtContext(s.ctx, s.stmtGaugeUpdate)
-	txCounterUpdate := tx.StmtContext(s.ctx, s.stmtCounterUpdate)
-	txGaugeInsert := tx.StmtContext(s.ctx, s.stmtGaugeInsert)
-	txCounterInsert := tx.StmtContext(s.ctx, s.stmtCounterInsert)
+	txGaugeUpdate := tx.StmtContext(r.ctx, r.stmtGaugeUpdate)
+	txCounterUpdate := tx.StmtContext(r.ctx, r.stmtCounterUpdate)
+	txGaugeInsert := tx.StmtContext(r.ctx, r.stmtGaugeInsert)
+	txCounterInsert := tx.StmtContext(r.ctx, r.stmtCounterInsert)
 
 	// запишем значения gauge
 	if m.Gauges != nil {
@@ -30,7 +30,7 @@ func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 				return err
 			}
 			if count == 0 {
-				_, errGaugeInsert := txGaugeInsert.ExecContext(s.ctx, id, value)
+				_, errGaugeInsert := txGaugeInsert.ExecContext(r.ctx, id, value)
 				if errGaugeInsert != nil {
 					return err
 				}
@@ -51,7 +51,7 @@ func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 				return err
 			}
 			if count == 0 {
-				_, errCounterInsert := txCounterInsert.ExecContext(s.ctx, id, delta)
+				_, errCounterInsert := txCounterInsert.ExecContext(r.ctx, id, delta)
 				if errCounterInsert != nil {
 					return err
 				}
