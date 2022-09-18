@@ -42,7 +42,7 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 		h.errorJSON(w, r, "Metric type needed", http.StatusBadRequest)
 		return
 	case "gauge":
-		gauge, errGet := h.uc.Get(m.ID)
+		gauge, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
 			msg := fmt.Sprintf("%s; type: gauge; id: %s", errGet, m.ID)
 			h.errorJSON(w, r, msg, http.StatusNotFound)
@@ -56,7 +56,7 @@ func (h *Handler) Value(w http.ResponseWriter, r *http.Request) {
 			m.Hash = metrics.GaugeHash(h.key, m.ID, *m.Value)
 		}
 	case "counter":
-		counter, errGet := h.uc.Get(m.ID)
+		counter, errGet := h.storer.Get(m.ID)
 		if errGet != nil {
 			msg := fmt.Sprintf("%s; type: counter; id: %s", errGet, m.ID)
 			h.errorJSON(w, r, msg, http.StatusNotFound)

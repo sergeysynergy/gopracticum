@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-// Старый вид отправки запроса - обычным текстом
+// старый вид отправки запроса - обычным текстом
 func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key string, value interface{}) {
 	defer wg.Done()
 
@@ -68,7 +68,7 @@ func (a *Agent) sendUpdate(ctx context.Context, m *metrics.Metrics) (*resty.Resp
 }
 
 func (a *Agent) sendReportUpdate(ctx context.Context) {
-	mcs, err := a.repo.GetMetrics()
+	mcs, err := a.storage.GetMetrics()
 	if err != nil {
 		a.handleError(err)
 		return

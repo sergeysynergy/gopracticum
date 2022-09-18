@@ -4,21 +4,23 @@ package pgsql
 import (
 	"context"
 	"database/sql"
-	storage2 "github.com/sergeysynergy/metricser/internal/domain/storage"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 	"sync"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+
+	"github.com/sergeysynergy/metricser/internal/data/model"
+	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
-// Repo Реализует репозиторий для работы с СУБД Postgres.
-type Repo struct {
+// Storage хранит подключение к БД, контекст выполнения и список SQL-утверждений.
+type Storage struct {
 	onceDB sync.Once
 	db     *sql.DB
 	ctx    context.Context
 	cancel context.CancelFunc
-	dsn    string
 
 	stmtGaugeInsert   *sql.Stmt
 	stmtCounterInsert *sql.Stmt
@@ -30,10 +32,8 @@ type Repo struct {
 	stmtAllSelect     *sql.Stmt
 }
 
-var _ storage2.RepoDB = new(Repo)
-
 // New создаёт и инициализирует новую структуру типа Storage.
-func New(dsn string) *Repo {
+func New(dsn string) storage.DBStorer {
 	// Вернём nil в случае пустой строки DSN. Важно: если не возвращать `nil`, не пройдут автотесты.
 	if dsn == "" {
 		return nil
@@ -41,59 +41,46 @@ func New(dsn string) *Repo {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	r := &Repo{
+	s := &Storage{
 		ctx:    ctx,
 		cancel: cancel,
-		dsn:    dsn,
 	}
 
-	r.init()
+	s.initDB(dsn)
 
-	return r
-}
-
-func (r *Repo) init() {
-	var err error
-
-	err = r.initDB(r.dsn)
+	err := s.initTable()
 	if err != nil {
 		log.Fatal("[FATAL] Database initialization failed - ", err)
 	}
 
-	err = r.initTable()
-	if err != nil {
-		log.Fatal("[FATAL] Database initialization failed - ", err)
-	}
-
-	err = r.initStatements()
+	err = s.initStatements()
 	if err != nil {
 		log.Fatal("[FATAL] Database statements initialization failed - ", err)
 	}
+
+	return s
 }
 
 // initDB Инициализирует и настраивает подключение к БД, создаёт таблицу с метриками при необходимости.
-func (r *Repo) initDB(dsn string) (err error) {
-	r.onceDB.Do(func() {
-		var db *sql.DB
-		db, err = sql.Open("pgx", dsn)
+func (s *Storage) initDB(dsn string) {
+	s.onceDB.Do(func() {
+		db, err := sql.Open("pgx", dsn)
 		if err != nil {
-			return
+			log.Fatal("[FATAL] Database initialization failed - ", err)
 		}
-		r.db = db
+		s.db = db
 
 		db.SetMaxOpenConns(40)
 		db.SetMaxIdleConns(20)
 		db.SetConnMaxIdleTime(time.Second * 60)
 	})
-
-	return err
 }
 
 // initTable Создаёт в БД таблицу с метриками, если она отсутствует.
-func (r *Repo) initTable() error {
-	_, err := r.db.ExecContext(r.ctx, "select * from metrics;")
+func (s *Storage) initTable() error {
+	_, err := s.db.ExecContext(s.ctx, "select * from metrics;")
 	if err != nil {
-		_, err = r.db.ExecContext(r.ctx, `
+		_, err = s.db.ExecContext(s.ctx, `
 			CREATE TABLE public.metrics (
 				id text NOT NULL,
 				type text NOT NULL, 
@@ -113,48 +100,143 @@ func (r *Repo) initTable() error {
 }
 
 // closeStatements Инициализирует SLQ-утверждения при запуске.
-func (r *Repo) initStatements() error {
+func (s *Storage) initStatements() error {
 	var err error
 
-	r.stmtGaugeInsert, err = r.db.PrepareContext(r.ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)")
+	s.stmtGaugeInsert, err = s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)")
 	if err != nil {
 		return err
 	}
 
-	r.stmtCounterInsert, err = r.db.PrepareContext(r.ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)")
+	s.stmtCounterInsert, err = s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, delta) VALUES ($1, 'counter', $2)")
 	if err != nil {
 		return err
 	}
 
-	r.stmtGaugeUpdate, err = r.db.PrepareContext(r.ctx, "UPDATE metrics SET value = $2 WHERE id = $1")
+	s.stmtGaugeUpdate, err = s.db.PrepareContext(s.ctx, "UPDATE metrics SET value = $2 WHERE id = $1")
 	if err != nil {
 		return err
 	}
 
-	r.stmtCounterUpdate, err = r.db.PrepareContext(r.ctx, "UPDATE metrics SET delta = $2 WHERE id = $1")
+	s.stmtCounterUpdate, err = s.db.PrepareContext(s.ctx, "UPDATE metrics SET delta = $2 WHERE id = $1")
 	if err != nil {
 		return err
 	}
 
-	r.stmtGaugeGet, err = r.db.PrepareContext(r.ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)")
+	s.stmtGaugeGet, err = s.db.PrepareContext(s.ctx, "INSERT INTO metrics (id, type, value) VALUES ($1, 'gauge', $2)")
 	if err != nil {
 		return err
 	}
 
-	r.stmtCounterGet, err = r.db.PrepareContext(r.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
+	s.stmtCounterGet, err = s.db.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
 	if err != nil {
 		return err
 	}
 
-	r.stmtAllUpdate, err = r.db.PrepareContext(r.ctx, "UPDATE metrics SET delta=$2, value=$3 WHERE id = $1")
+	s.stmtAllUpdate, err = s.db.PrepareContext(s.ctx, "UPDATE metrics SET delta=$2, value=$3 WHERE id = $1")
 	if err != nil {
 		return err
 	}
 
-	r.stmtAllSelect, err = r.db.PrepareContext(r.ctx, "SELECT id, type, value, delta FROM metrics")
+	s.stmtAllSelect, err = s.db.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics")
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// closeStatements Закрывает SLQ-утверждения при завершении работы.
+func (s *Storage) closeStatements() error {
+	err := s.stmtGaugeInsert.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtCounterInsert.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtGaugeUpdate.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtCounterUpdate.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtGaugeGet.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtCounterGet.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtAllUpdate.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.stmtAllSelect.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Ping позволяет проверить наличие связи с БД.
+func (s *Storage) Ping() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	if err := s.db.PingContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Shutdown штатно завершает работу с БД.
+func (s *Storage) Shutdown() error {
+	s.cancel()
+
+	err := s.closeStatements()
+	if err != nil {
+		return err
+	}
+
+	err = s.db.Close()
+	if err != nil {
+		return err
+	}
+
+	log.Println("connection to database closed")
+	return nil
+}
+
+// checkCounter Получает текущее значение счётчика.
+func (s *Storage) checkCounter(id string) (metrics.Counter, error) {
+	m := model.Metrics{}
+	row := s.stmtCounterGet.QueryRowContext(s.ctx, id)
+
+	err := row.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
+	if err == sql.ErrNoRows {
+		_, err = s.stmtCounterInsert.ExecContext(s.ctx, id, 0)
+		if err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return metrics.Counter(m.Delta.Int64), nil
 }

@@ -1,6 +1,13 @@
 package filestore
 
-/*
+import (
+	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
+
+	"github.com/sergeysynergy/metricser/pkg/metrics"
+)
+
 func TestFileStoreRestoreMetrics(t *testing.T) {
 	type want struct {
 		wantErr bool
@@ -78,4 +85,3 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 		})
 	}
 }
-*/

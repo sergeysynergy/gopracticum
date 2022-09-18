@@ -4,16 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
-	"github.com/sergeysynergy/metricser/internal/data/repository/filestore"
-	"log"
-
 	"github.com/sergeysynergy/metricser/config"
 	"github.com/sergeysynergy/metricser/internal/data/repository/pgsql"
-	"github.com/sergeysynergy/metricser/internal/domain/storage"
+	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/sergeysynergy/metricser/internal/handlers"
 	"github.com/sergeysynergy/metricser/internal/httpserver"
 	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"github.com/sergeysynergy/metricser/pkg/utils"
+	"log"
 )
 
 //type config struct {
@@ -68,39 +66,35 @@ func main() {
 	log.Printf("Receive config: %#v\n", cfg)
 
 	// Получим реализацию репозитория для работы с БД.
-	repoDB := pgsql.New(cfg.DatabaseDSN)
+	dbStorer := pgsql.New(cfg.DatabaseDSN)
 
 	// Создадим файловое хранилище на базе Storage
-	repoFile := filestore.New(
-		//filestore.WithStorer(dbStorer),
+	fileStorer := filestore.New(
+		filestore.WithStorer(dbStorer),
 		filestore.WithStoreFile(cfg.StoreFile),
-		//filestore.WithRestore(cfg.Restore),
-		//filestore.WithStoreInterval(cfg.StoreInterval),
+		filestore.WithRestore(cfg.Restore),
+		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
-	useCase := storage.New(repoDB, repoFile,
-		storage.WithRestore(cfg.Restore),
-		storage.WithStoreInterval(cfg.StoreInterval),
-	)
-
-	// Подключим обработчики запросов.
 	privateKey, err := crypter.OpenPrivate(cfg.CryptoKey)
 	if err != nil {
 		log.Println("[WARNING] Failed to get private key - ", err)
 	}
-	h := handlers.New(useCase,
-		//handlers.WithFileStorer(fileStorer),
-		//handlers.WithDBStorer(dbStorer),
+
+	// Подключим обработчики запросов.
+	h := handlers.New(
+		handlers.WithFileStorer(fileStorer),
+		handlers.WithDBStorer(dbStorer),
 		handlers.WithKey(cfg.Key),
 		handlers.WithPrivateKey(privateKey),
 		handlers.WithTrustedSubnet(cfg.TrustedSubnet),
 	)
 
 	// Проинициализируем сервер с использованием ранее объявленных обработчиков и файлового хранилища.
-	s := httpserver.New(useCase, h.GetRouter(),
+	s := httpserver.New(h.GetRouter(),
 		httpserver.WithAddress(cfg.Addr),
-		//httpserver.WithFileStorer(fileStorer),
-		//httpserver.WithDBStorer(dbStorer),
+		httpserver.WithFileStorer(fileStorer),
+		httpserver.WithDBStorer(dbStorer),
 	)
 
 	//go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования

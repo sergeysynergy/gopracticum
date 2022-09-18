@@ -146,8 +146,8 @@ type ProxyMetrics struct {
 }
 
 // NewProxyMetrics Создаёт новый объект типа ProxyMetrics.
-func NewProxyMetrics() *ProxyMetrics {
-	return &ProxyMetrics{
+func NewProxyMetrics() ProxyMetrics {
+	return ProxyMetrics{
 		Gauges:   make(map[string]Gauge, TypeGaugeLen),
 		Counters: make(map[string]Counter, TypeCounterLen),
 	}

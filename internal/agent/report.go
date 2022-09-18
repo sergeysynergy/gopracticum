@@ -32,7 +32,7 @@ func (a *Agent) reportTicker(ctx context.Context) {
 func (a *Agent) report(ctx context.Context) {
 	hm := make([]metrics.Metrics, 0, metrics.TypeGaugeLen+metrics.TypeCounterLen)
 
-	prm, err := a.repo.GetMetrics()
+	prm, err := a.storage.GetMetrics()
 	if err != nil {
 		a.handleError(err)
 		return

@@ -46,7 +46,7 @@ func (a *Agent) gopsutilUpdate() {
 
 	prm.Gauges = gauges
 
-	err = a.repo.PutMetrics(prm)
+	err = a.storage.PutMetrics(prm)
 	if err != nil {
 		a.handleError(fmt.Errorf("ошибка обновления метрик посредством пакета `gopsutil` - %w", err))
 	}

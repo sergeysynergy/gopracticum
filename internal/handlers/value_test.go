@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/metricser/internal/data/repository/filestore"
-	"github.com/sergeysynergy/metricser/internal/domain/storage"
+	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
