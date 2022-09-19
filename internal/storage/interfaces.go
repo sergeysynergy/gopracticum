@@ -10,18 +10,20 @@ type UseCase interface {
 }
 
 type Repo interface {
-	Shutdown() error
-	PutMetrics(*metrics.ProxyMetrics) error
-	GetMetrics() (*metrics.ProxyMetrics, error)
-	Restore(*metrics.ProxyMetrics) error
 	Ping() error
+	Shutdown() error
+
 	Put(string, interface{}) error
 	Get(string) (interface{}, error)
+
+	PutMetrics(metrics.ProxyMetrics) error
+	GetMetrics() (metrics.ProxyMetrics, error)
+
+	Restore(metrics.ProxyMetrics) error
 }
 
 type FileRepo interface {
-	WriteMetrics(*metrics.ProxyMetrics) error
-	ReadMetrics() (*metrics.ProxyMetrics, error)
-
-	WriteTicker(*metrics.ProxyMetrics) error
+	WriteTicker() error
+	WriteMetrics() error
+	Shutdown() error
 }

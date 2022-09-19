@@ -44,14 +44,14 @@ func (s *Storage) Put(id string, val interface{}) error {
 			return err
 		}
 	default:
-		return metricserErrors.ErrNotImplemented
+		return metricserErrors.MetricNotImplemented
 	}
 
 	return nil
 }
 
 // PutMetrics Массово записывает значение метрик в БД.
-func (s *Storage) PutMetrics(m *metrics.ProxyMetrics) error {
+func (s *Storage) PutMetrics(m metrics.ProxyMetrics) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -84,7 +84,8 @@ func (s *Storage) PutMetrics(m *metrics.ProxyMetrics) error {
 	}
 
 	if m.Counters != nil {
-		for id, delta := range m.Counters { // получим текущее значение счётчика
+		for id, delta := range m.Counters {
+			// получим текущее значение счётчика
 			mtx := model.Metrics{}
 			// s.pgsql.PrepareContext(s.ctx, "SELECT id, type, value, delta FROM metrics WHERE id=$1")
 			row := txCounterGet.QueryRowContext(s.ctx, id)

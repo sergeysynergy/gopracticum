@@ -1,14 +1,10 @@
 package storage
 
-import (
-	"fmt"
-	"github.com/sergeysynergy/metricser/pkg/metrics"
-)
+import "fmt"
 
-func (s *Storage) WriteMetrics(prm *metrics.ProxyMetrics) error {
+func (s *Storage) WriteMetrics() error {
 	if s.fileRepo == nil {
 		return fmt.Errorf("empty filestore repository")
 	}
-
-	return s.fileRepo.WriteMetrics(prm)
+	return s.fileRepo.WriteMetrics()
 }

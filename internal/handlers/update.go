@@ -36,7 +36,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		log.Println("[WARNING] unknown metric ID", m.ID)
 	}
 
-	prm := metrics.NewProxyMetrics()
 	switch m.MType {
 	case "gauge":
 		if m.Value == nil {
@@ -51,13 +50,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		gauge := metrics.Gauge(*m.Value)
-		err = h.uc.Put(m.ID, gauge)
+		err = h.uc.Put(m.ID, metrics.Gauge(*m.Value))
 		if err != nil {
 			h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
-		prm.Gauges[m.ID] = gauge
 	case "counter":
 		if m.Delta == nil {
 			h.errorJSON(w, r, "nil counter value", http.StatusBadRequest)
@@ -71,13 +68,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		counter := metrics.Counter(*m.Delta)
-		err = h.uc.Put(m.ID, counter)
+		err = h.uc.Put(m.ID, metrics.Counter(*m.Delta))
 		if err != nil {
 			h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
-		prm.Counters[m.ID] = counter
 	default:
 		err = fmt.Errorf("not implemented")
 		h.errorJSON(w, r, err.Error(), http.StatusNotImplemented)
@@ -87,7 +82,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// запишем метрики в файл, если проинициализировано хранилище на базе файла
-	err = h.uc.PutMetrics(prm)
+	err = h.uc.WriteMetrics()
 	if err != nil {
 		h.errorJSON(w, r, err.Error(), http.StatusInternalServerError)
 		return

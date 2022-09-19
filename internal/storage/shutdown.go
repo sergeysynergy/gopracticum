@@ -8,19 +8,8 @@ func (s *Storage) Shutdown() error {
 		}
 	}
 
-	// Shutdown Штатно завершает работу файлового хранилища, сохраняя перед выходом значения метрик в файл.
 	if s.fileRepo != nil {
-		//defer fs.cancel()
-		//err := fs.writeMetrics()
-		//if err != nil {
-		//	return err
-		//}
-		prm, err := s.repo.GetMetrics()
-		if err != nil {
-			return err
-		}
-
-		err = s.fileRepo.WriteMetrics(prm)
+		err := s.fileRepo.Shutdown()
 		if err != nil {
 			return err
 		}

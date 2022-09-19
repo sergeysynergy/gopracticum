@@ -29,7 +29,7 @@ func (r *Repo) Put(id string, metric interface{}) error {
 }
 
 // PutMetrics Массово записывает значение метрик в хранилище Storage.
-func (r *Repo) PutMetrics(m *metrics.ProxyMetrics) error {
+func (r *Repo) PutMetrics(m metrics.ProxyMetrics) error {
 	// для удобства вызова PutMetrics проинициализируем нулевой хэш Gauges
 	if m.Gauges == nil {
 		m.Gauges = make(map[string]metrics.Gauge)
