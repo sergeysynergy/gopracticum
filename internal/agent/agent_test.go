@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sergeysynergy/metricser/internal/handlers"
+	"github.com/sergeysynergy/metricser/internal/service/delivery/http/handlers"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
