@@ -1,12 +1,13 @@
 package storage
 
 import (
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 )
 
 func ExampleStorage_Put() {
-	st := New()
+	st := New(memory.New(), nil)
 	alloc := metrics.Gauge(42.24)
 
 	err := st.Put(metrics.Alloc, alloc)

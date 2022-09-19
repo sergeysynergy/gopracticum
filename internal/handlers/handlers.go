@@ -23,10 +23,13 @@ const (
 
 // Handler хранит объекты роутов, репозитория и непосредственно бизнес-логики для работы с хранилищем метрик.
 type Handler struct {
-	router        chi.Router
-	storer        storage.Repo
-	fileStorer    storage.FileStorer
-	dbStorer      storage.DBStorer
+	router chi.Router
+
+	//storer storage.Repo
+	//fileStorer    storage.FileStorer
+	//dbStorer      storage.DBStorer
+	uc storage.UseCase
+
 	key           string
 	privateKey    *rsa.PrivateKey
 	trustedSubnet *net.IPNet
@@ -35,10 +38,11 @@ type Handler struct {
 type Option func(handler *Handler)
 
 // New Создаёт новый объект JSON API Handler.
-func New(opts ...Option) *Handler {
+func New(uc storage.UseCase, opts ...Option) *Handler {
 	h := &Handler{
 		router:        chi.NewRouter(), // создадим новый роутер
 		trustedSubnet: &net.IPNet{},    // создадим объект доверенной сети
+		uc:            uc,
 	}
 
 	// применяем в цикле каждую опцию
@@ -48,16 +52,16 @@ func New(opts ...Option) *Handler {
 	}
 
 	// проинициализируем хранилище Storer
-	if h.dbStorer != nil {
-		h.storer = h.dbStorer
-		log.Println("database storer chosen")
-	} else if h.fileStorer != nil {
-		log.Println("filestore storer chosen")
-		h.storer = h.fileStorer
-	} else {
-		log.Println("default storer chosen")
-		h.storer = storage.New()
-	}
+	//if h.dbStorer != nil {
+	//	h.storer = h.dbStorer
+	//	log.Println("database storer chosen")
+	//} else if h.fileStorer != nil {
+	//	log.Println("filestore storer chosen")
+	//	h.storer = h.fileStorer
+	//} else {
+	//	log.Println("default storer chosen")
+	//	h.storer = storage.New()
+	//}
 
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
 	h.router.Use(cidrCheck(h.trustedSubnet))
@@ -93,26 +97,6 @@ func WithPrivateKey(key *rsa.PrivateKey) Option {
 	}
 }
 
-// WithFileStorer Использует переданное файловое хранилище.
-func WithFileStorer(fs storage.FileStorer) Option {
-	return func(h *Handler) {
-		if fs != nil {
-			log.Println("file storage plugin connected")
-			h.fileStorer = fs
-		}
-	}
-}
-
-// WithDBStorer Использует переданный репозиторий.
-func WithDBStorer(db storage.DBStorer) Option {
-	return func(h *Handler) {
-		if db != nil {
-			log.Println("database plugin connected")
-			h.dbStorer = db
-		}
-	}
-}
-
 // WithKey Использует переданный ключ для создания хэша.
 func WithKey(key string) Option {
 	return func(h *Handler) {
@@ -138,7 +122,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		value float64
 	}
 
-	mcs, err := h.storer.GetMetrics()
+	mcs, err := h.uc.GetMetrics()
 	if err != nil {
 		h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 		return

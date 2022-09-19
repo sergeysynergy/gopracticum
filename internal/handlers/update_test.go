@@ -5,6 +5,8 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
+	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -41,7 +43,7 @@ func TestUpdateHardBody(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New()
+			handler := New(storage.New(memory.New(), nil))
 			ts := httptest.NewServer(handler.router)
 			defer ts.Close()
 
@@ -154,7 +156,7 @@ func TestUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New(WithKey(tt.key))
+			handler := New(storage.New(memory.New(), nil), WithKey(tt.key))
 			ts := httptest.NewServer(handler.router)
 			defer ts.Close()
 

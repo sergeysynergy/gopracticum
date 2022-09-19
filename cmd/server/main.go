@@ -9,22 +9,11 @@ import (
 	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/sergeysynergy/metricser/internal/handlers"
 	"github.com/sergeysynergy/metricser/internal/httpserver"
+	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"github.com/sergeysynergy/metricser/pkg/utils"
 	"log"
 )
-
-//type config struct {
-//	Key        string `env:"KEY"`
-//	ConfigFile string
-//
-//	Addr          string        `env:"ADDRESS" json:"address"`
-//	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
-//	Restore       bool          `env:"RESTORE" json:"restore"`
-//	StoreInterval time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
-//	DatabaseDSN   string        `env:"DATABASE_DSN" json:"database_dsn"`
-//	CryptoKey     string        `env:"CRYPTO_KEY" json:"crypto_key"`
-//}
 
 var (
 	buildVersion string
@@ -65,9 +54,13 @@ func main() {
 	}
 	log.Printf("Receive config: %#v\n", cfg)
 
+	// Проверка на выполнение контракта интерфейса.
+	var _ storage.Repo = new(pgsql.Storage)
 	// Получим реализацию репозитория для работы с БД.
 	dbStorer := pgsql.New(cfg.DatabaseDSN)
 
+	// Проверка на выполнение контракта интерфейса.
+	var _ storage.FileRepo = new(filestore.FileStore)
 	// Создадим файловое хранилище на базе Storage
 	fileStorer := filestore.New(
 		filestore.WithStorer(dbStorer),
@@ -76,25 +69,29 @@ func main() {
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
+	uc := storage.New(dbStorer, fileStorer,
+		storage.WithDBStorer(dbStorer),
+		storage.WithFileStorer(fileStorer),
+	)
+
+	// Подключим обработчики запросов.
 	privateKey, err := crypter.OpenPrivate(cfg.CryptoKey)
 	if err != nil {
 		log.Println("[WARNING] Failed to get private key - ", err)
 	}
-
-	// Подключим обработчики запросов.
-	h := handlers.New(
-		handlers.WithFileStorer(fileStorer),
-		handlers.WithDBStorer(dbStorer),
+	h := handlers.New(uc,
+		//handlers.WithFileStorer(fileStorer),
+		//handlers.WithDBStorer(dbStorer),
 		handlers.WithKey(cfg.Key),
 		handlers.WithPrivateKey(privateKey),
 		handlers.WithTrustedSubnet(cfg.TrustedSubnet),
 	)
 
 	// Проинициализируем сервер с использованием ранее объявленных обработчиков и файлового хранилища.
-	s := httpserver.New(h.GetRouter(),
+	s := httpserver.New(uc, h.GetRouter(),
 		httpserver.WithAddress(cfg.Addr),
-		httpserver.WithFileStorer(fileStorer),
-		httpserver.WithDBStorer(dbStorer),
+		//httpserver.WithFileStorer(fileStorer),
+		//httpserver.WithDBStorer(dbStorer),
 	)
 
 	//go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования

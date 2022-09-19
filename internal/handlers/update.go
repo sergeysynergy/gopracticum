@@ -50,7 +50,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = h.storer.Put(m.ID, metrics.Gauge(*m.Value))
+		err = h.uc.Put(m.ID, metrics.Gauge(*m.Value))
 		if err != nil {
 			h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -68,7 +68,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = h.storer.Put(m.ID, metrics.Counter(*m.Delta))
+		err = h.uc.Put(m.ID, metrics.Counter(*m.Delta))
 		if err != nil {
 			h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -82,11 +82,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// запишем метрики в файл, если проинициализировано хранилище на базе файла
-	if h.fileStorer != nil {
-		_, err = h.fileStorer.WriteMetrics()
-		if err != nil {
-			h.errorJSON(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	err = h.uc.WriteMetrics()
+	if err != nil {
+		h.errorJSON(w, r, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -10,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
@@ -47,7 +47,7 @@ func TestPost(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New()
+			handler := New(storage.New(memory.New(), nil))
 			r := chi.NewRouter()
 			r.Post("/update/{type}/{name}/{value}", handler.Post)
 			ts := httptest.NewServer(r)
@@ -90,9 +90,9 @@ func TestGet(t *testing.T) {
 	}{
 		{
 			name: "Gauge ok",
-			handler: New(WithFileStorer(filestore.New(filestore.WithStorer(
-				storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
-			)))),
+			handler: New(storage.New(memory.New(), nil, storage.WithGauges(
+				map[string]metrics.Gauge{"Alloc": 1221.23},
+			))),
 			request: "/value/gauge/Alloc",
 			want: want{
 				statusCode: http.StatusOK,
@@ -101,18 +101,18 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name:    "Gauge not found",
-			handler: New(),
+			handler: New(storage.New(memory.New(), nil)),
 			request: "/value/gauge/NotFound",
 			want: want{
 				statusCode: http.StatusNotFound,
-				value:      "storage: metric not found\n",
+				value:      "metrics not found\n",
 			},
 		},
 		{
 			name: "Counter ok",
-			handler: New(WithFileStorer(filestore.New(filestore.WithStorer(
-				storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
-			)))),
+			handler: New(storage.New(memory.New(), nil, storage.WithCounters(
+				map[string]metrics.Counter{"PollCount": 42},
+			))),
 			request: "/value/counter/PollCount",
 			want: want{
 				statusCode: http.StatusOK,
@@ -121,16 +121,16 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name:    "Counter not found",
-			handler: New(),
+			handler: New(storage.New(memory.New(), nil)),
 			request: "/value/counter/NotFound",
 			want: want{
 				statusCode: http.StatusNotFound,
-				value:      "storage: metric not found\n",
+				value:      "metrics not found\n",
 			},
 		},
 		{
 			name:    "Not implemented",
-			handler: New(),
+			handler: New(storage.New(memory.New(), nil)),
 			request: "/value/not/implemented",
 			want: want{
 				statusCode: http.StatusNotImplemented,
@@ -174,7 +174,7 @@ func TestList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New()
+			handler := New(storage.New(memory.New(), nil))
 			r := chi.NewRouter()
 			r.Get("/", handler.List)
 			ts := httptest.NewServer(r)

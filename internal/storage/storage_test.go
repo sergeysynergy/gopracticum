@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestStoragePut(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			s := New()
+			s := New(memory.New(), nil)
 
 			switch tt.mType {
 			case "gauge":
@@ -104,7 +105,7 @@ func TestStorageGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			s := New(
+			s := New(memory.New(), nil,
 				WithGauges(map[string]metrics.Gauge{metrics.Alloc: 1234.42}),
 				WithCounters(map[string]metrics.Counter{metrics.PollCount: 42}),
 			)
@@ -189,7 +190,7 @@ func TestStoragePutGetMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := New()
+			s := New(memory.New(), nil)
 
 			err := s.PutMetrics(tt.put)
 			assert.NoError(t, err)

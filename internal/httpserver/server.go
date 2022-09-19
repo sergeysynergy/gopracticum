@@ -16,20 +16,23 @@ import (
 // Server Хранит данные и объекты для реализации работы http-сервера.
 type Server struct {
 	server       *http.Server
-	fileStorer   storage.FileStorer
-	dbStorer     storage.DBStorer
 	graceTimeout time.Duration // Время на штатное завершения работы сервера
+
+	//fileStorer   storage.FileStorer
+	//dbStorer     storage.DBStorer
+	uc storage.UseCase
 }
 
 type Option func(server *Server)
 
 // New Создаёт новый объект типа Server.
-func New(h http.Handler, opts ...Option) *Server {
+func New(uc storage.UseCase, h http.Handler, opts ...Option) *Server {
 	const (
 		defaultAddress      = "127.0.0.1:8080"
 		defaultGraceTimeout = 20 * time.Second
 	)
 	s := &Server{
+		uc: uc,
 		server: &http.Server{
 			Addr:           defaultAddress,
 			ReadTimeout:    time.Second * 10,
@@ -60,22 +63,22 @@ func WithAddress(addr string) Option {
 }
 
 // WithFileStorer Использует переданное файловое хранилище.
-func WithFileStorer(fs storage.FileStorer) Option {
-	return func(s *Server) {
-		if fs != nil {
-			s.fileStorer = fs
-		}
-	}
-}
+//func WithFileStorer(fs storage.FileStorer) Option {
+//	return func(s *Server) {
+//		if fs != nil {
+//			s.fileStorer = fs
+//		}
+//	}
+//}
 
 // WithDBStorer Использует переданный репозиторий.
-func WithDBStorer(ds storage.DBStorer) Option {
-	return func(s *Server) {
-		if ds != nil {
-			s.dbStorer = ds
-		}
-	}
-}
+//func WithDBStorer(ds storage.DBStorer) Option {
+//	return func(s *Server) {
+//		if ds != nil {
+//			s.dbStorer = ds
+//		}
+//	}
+//}
 
 // graceDown Штатное завершение работы сервера.
 func (s *Server) graceDown() {
@@ -98,20 +101,10 @@ func (s *Server) graceDown() {
 			}
 		}()
 
-		// штатно завершим работу файлового хранилища, если оно проинициализировано
-		if s.fileStorer != nil {
-			err := s.fileStorer.Shutdown()
-			if err != nil {
-				log.Fatal("[ERROR] Repository shutdown error - ", err)
-			}
-		}
-
-		// штатно завершим работу с базой данных, если она подключена
-		if s.dbStorer != nil {
-			err := s.dbStorer.Shutdown()
-			if err != nil {
-				log.Fatal("[ERROR] Database shutdown error - ", err)
-			}
+		// штатно завершим работу файлового хранилища и БД
+		err := s.uc.Shutdown()
+		if err != nil {
+			log.Fatal("[ERROR] Shutdown error - ", err)
 		}
 
 		// Штатно завершаем работу HTTP-сервера не прерывая никаких активных подключений.
@@ -120,7 +113,7 @@ func (s *Server) graceDown() {
 		// - затем закрытия всех незанятых подключений;
 		// - а затем бесконечного ожидания возврата подключений в режим ожидания;
 		// - наконец, завершения работы.
-		err := s.server.Shutdown(context.Background())
+		err = s.server.Shutdown(context.Background())
 		if err != nil {
 			log.Fatal("[ERROR] Server shutdown error - ", err)
 		}
@@ -132,16 +125,14 @@ func (s *Server) Serve() {
 	s.graceDown()
 
 	// вызовем рутину периодического сохранения данных метрик в файл, если хранилище проинициализировано
-	if s.fileStorer != nil {
-		err := s.fileStorer.WriteTicker()
-		if err != nil {
-			log.Println("[WARNING] Failed to start repository writing ticker - ", err)
-		}
+	err := s.uc.WriteTicker()
+	if err != nil {
+		log.Println("[WARNING] Failed to start repository writing ticker - ", err)
 	}
 
 	// запустим сервер
 	log.Printf("starting HTTP-server at %s\n", s.server.Addr)
-	err := s.server.ListenAndServe()
+	err = s.server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal("[ERROR] Failed to run HTTP-server", err)
 	}

@@ -79,8 +79,8 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 			)
 			if !tt.want.wantErr {
 				assert.NoError(t, err)
-				mcs, _ := fs.GetMetrics()
-				assert.Equal(t, tt.want.body, mcs)
+				prm, _ := fs.repo.GetMetrics()
+				assert.Equal(t, tt.want.body, prm)
 			}
 		})
 	}

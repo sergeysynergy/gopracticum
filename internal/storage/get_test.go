@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 func ExampleStorage_Get() {
-	st := New()
+	st := New(memory.New(), nil)
 
 	alloc, err := st.Get(metrics.Alloc)
 	if err != nil {

@@ -4,33 +4,29 @@ package storage
 
 import (
 	"errors"
-	"sync"
-
 	"github.com/sergeysynergy/metricser/pkg/metrics"
+	"log"
 )
 
 var (
-	ErrNotImplemented = errors.New("storage: metric not implemented")
-	ErrNotFound       = errors.New("storage: metric not found")
+	ErrNotImplemented = errors.New("metrics not implemented")
+	ErrNotFound       = errors.New("metrics not found")
 )
 
 // Storage Описывает логику работы с хранилищем метрик; кэширует значения всех метрик в памяти;
 // сохраняет/извлекает метрики в БД.
 type Storage struct {
-	gaugesMu sync.RWMutex
-	gauges   map[string]metrics.Gauge
-
-	countersMu sync.RWMutex
-	counters   map[string]metrics.Counter
+	repo     Repo
+	fileRepo FileRepo
 }
 
-type Options func(storage *Storage)
+type Option func(storage *Storage)
 
 // New Создаёт новый объект хранилища метрик Storage.
-func New(opts ...Options) *Storage {
+func New(repo Repo, fileRepo FileRepo, opts ...Option) *Storage {
 	s := &Storage{
-		gauges:   make(map[string]metrics.Gauge, metrics.TypeGaugeLen),
-		counters: make(map[string]metrics.Counter, metrics.TypeCounterLen),
+		repo:     repo,
+		fileRepo: fileRepo,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -39,16 +35,40 @@ func New(opts ...Options) *Storage {
 	return s
 }
 
-// WithGauges Использует переданные значения gauge-метрик.
-func WithGauges(gauges map[string]metrics.Gauge) Options {
+func WithDBStorer(repo Repo) Option {
 	return func(s *Storage) {
-		s.gauges = gauges
+		if repo != nil {
+			log.Println("database plugin connected")
+			s.repo = repo
+		}
+	}
+}
+
+func WithFileStorer(fr FileRepo) Option {
+	return func(s *Storage) {
+		if fr != nil {
+			log.Println("file storage plugin connected")
+			s.fileRepo = fr
+		}
+	}
+}
+
+// WithGauges Использует переданные значения gauge-метрик.
+func WithGauges(gauges map[string]metrics.Gauge) Option {
+	return func(s *Storage) {
+		//s.gauges = gauges
+		prm := metrics.NewProxyMetrics()
+		prm.Gauges = gauges
+		s.repo.Restore(prm)
 	}
 }
 
 // WithCounters Использует переданные значения counter-метрик.
-func WithCounters(counters map[string]metrics.Counter) Options {
+func WithCounters(counters map[string]metrics.Counter) Option {
 	return func(s *Storage) {
-		s.counters = counters
+		//s.counters = counters
+		prm := metrics.NewProxyMetrics()
+		prm.Counters = counters
+		s.repo.Restore(prm)
 	}
 }
