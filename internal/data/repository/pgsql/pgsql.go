@@ -12,7 +12,6 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/sergeysynergy/metricser/internal/data/model"
-	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
 // Storage хранит подключение к БД, контекст выполнения и список SQL-утверждений.
@@ -33,9 +32,10 @@ type Storage struct {
 }
 
 // New создаёт и инициализирует новую структуру типа Storage.
-func New(dsn string) storage.DBStorer {
+func New(dsn string) *Storage {
 	// Вернём nil в случае пустой строки DSN. Важно: если не возвращать `nil`, не пройдут автотесты.
 	if dsn == "" {
+		log.Println("[WARNING] Empty DSN given - database connection failed")
 		return nil
 	}
 

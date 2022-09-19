@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestValueContentType(t *testing.T) {
-	h := New()
+	h := New(storage.New())
 	ts := httptest.NewServer(h.router)
 	defer ts.Close()
 
@@ -29,7 +28,7 @@ func TestValueContentType(t *testing.T) {
 }
 
 func TestValueUnmarshalError(t *testing.T) {
-	h := New()
+	h := New(storage.New())
 	ts := httptest.NewServer(h.router)
 	defer ts.Close()
 
@@ -66,7 +65,7 @@ func TestValue(t *testing.T) {
 	}{
 		{
 			name:    "Metric type needed",
-			handler: New(),
+			handler: New(storage.New()),
 			body:    metrics.Metrics{MType: ""},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -74,7 +73,7 @@ func TestValue(t *testing.T) {
 		},
 		{
 			name:    "Not implemented",
-			handler: New(),
+			handler: New(storage.New()),
 			body:    metrics.Metrics{MType: "unknown"},
 			want: want{
 				statusCode: http.StatusNotImplemented,
@@ -82,7 +81,7 @@ func TestValue(t *testing.T) {
 		},
 		{
 			name:    "Gauge not found",
-			handler: New(),
+			handler: New(storage.New()),
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -93,7 +92,7 @@ func TestValue(t *testing.T) {
 		},
 		{
 			name:    "Counter not found",
-			handler: New(),
+			handler: New(storage.New()),
 			body: metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
@@ -104,11 +103,9 @@ func TestValue(t *testing.T) {
 		},
 		{
 			name: "Gauge ok",
-			handler: New(
-				WithFileStorer(filestore.New(filestore.WithStorer(
-					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
-				))),
-			),
+			handler: New(storage.New(storage.WithGauges(
+				map[string]metrics.Gauge{"Alloc": 1221.23},
+			))),
 			body: metrics.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -125,9 +122,7 @@ func TestValue(t *testing.T) {
 		{
 			name: "Hashed gauge ok",
 			handler: New(
-				WithFileStorer(filestore.New(filestore.WithStorer(
-					storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
-				))),
+				storage.New(storage.WithGauges(map[string]metrics.Gauge{"Alloc": 1221.23})),
 				WithKey(key),
 			),
 			body: metrics.Metrics{
@@ -145,11 +140,9 @@ func TestValue(t *testing.T) {
 		},
 		{
 			name: "Counter ok",
-			handler: New(
-				WithFileStorer(filestore.New(filestore.WithStorer(
-					storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
-				))),
-			),
+			handler: New(storage.New(storage.WithCounters(
+				map[string]metrics.Counter{"PollCount": 42},
+			))),
 			body: metrics.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
@@ -166,9 +159,7 @@ func TestValue(t *testing.T) {
 		{
 			name: "Hash counter ok",
 			handler: New(
-				WithFileStorer(filestore.New(filestore.WithStorer(
-					storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
-				))),
+				storage.New(storage.WithCounters(map[string]metrics.Counter{"PollCount": 42})),
 				WithKey(key),
 			),
 			body: metrics.Metrics{

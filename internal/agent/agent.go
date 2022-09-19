@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"log"
 	"math/rand"
 	"os"
@@ -39,9 +40,14 @@ func New(opts ...Option) *Agent {
 		defaultTimeout        = 4 * time.Second
 	)
 
+	// Проверим, что репозиторий реализует контракт интерфейса.
+	var _ storage.Repo = new(memory.Repo)
+
+	repo := storage.New()
+
 	a := &Agent{
 		client:         resty.New(),
-		storage:        storage.New(),
+		storage:        repo,
 		pollInterval:   defaultPollInterval,
 		reportInterval: defaultReportInterval,
 		protocol:       defaultProtocol,

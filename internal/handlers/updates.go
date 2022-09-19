@@ -83,7 +83,7 @@ func (h *Handler) Updates(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = h.storer.PutMetrics(prm)
+	err = h.uc.PutMetrics(prm)
 	if err != nil {
 		h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 		return

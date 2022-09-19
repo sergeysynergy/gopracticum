@@ -13,5 +13,3 @@ const (
 	MetricNotImplemented AppError = "metric not implemented"
 	EmptyFilename        AppError = "empty filename"
 )
-
-// Флаги не самый элегантный вариант решения задачи. Но с учётом рекурсивного прохода по древовидному графу - рабочий.

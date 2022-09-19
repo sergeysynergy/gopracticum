@@ -4,7 +4,15 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
+type UseCase interface {
+	Repo
+	FileRepo
+}
+
 type Repo interface {
+	Ping() error
+	Shutdown() error
+
 	Put(string, interface{}) error
 	Get(string) (interface{}, error)
 
@@ -14,16 +22,8 @@ type Repo interface {
 	Restore(metrics.ProxyMetrics) error
 }
 
-type DBStorer interface {
-	Repo
-
-	Ping() error
-	Shutdown() error
-}
-
-type FileStorer interface {
-	Repo
+type FileRepo interface {
 	WriteTicker() error
-	WriteMetrics() (int, error)
+	WriteMetrics() error
 	Shutdown() error
 }

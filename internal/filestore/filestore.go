@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"log"
 	"os"
 	"time"
@@ -17,7 +18,7 @@ import (
 // FileStore содержит реализацию репозитория работы с БД, контекст выполнения;
 // реализует возможность записи и извлечения значений всех метрик из файла.
 type FileStore struct {
-	storage.Repo
+	repo          storage.Repo
 	ctx           context.Context
 	cancel        context.CancelFunc
 	storeFile     string        // Имя файла, где хранятся значения метрик (пустое значение — отключает функцию записи на диск).
@@ -29,7 +30,7 @@ type FileStore struct {
 type Options func(fs *FileStore)
 
 // New Создаёт новый объект файлового хранилища FileStorer.
-func New(opts ...Options) storage.FileStorer {
+func New(opts ...Options) *FileStore {
 	const (
 		defaultStoreFile     = "/tmp/devops-metrics-pgsql.json"
 		defaultRestore       = false
@@ -40,6 +41,7 @@ func New(opts ...Options) storage.FileStorer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	fs := &FileStore{
+		repo:          memory.New(),
 		ctx:           ctx,
 		cancel:        cancel,
 		storeFile:     defaultStoreFile,
@@ -56,11 +58,6 @@ func New(opts ...Options) storage.FileStorer {
 		return nil
 	}
 
-	// создаём Storer, если он не был проинициализирован через WithStorer
-	if fs.Repo == nil {
-		fs.Repo = storage.New()
-	}
-
 	// проинициализируем файловое хранилище
 	err := fs.init()
 	if err != nil {
@@ -71,10 +68,10 @@ func New(opts ...Options) storage.FileStorer {
 }
 
 // WithStorer Использует переданный репозиторий.
-func WithStorer(st storage.Repo) Options {
+func WithStorer(repo storage.Repo) Options {
 	return func(fs *FileStore) {
-		if st != nil {
-			fs.Repo = st
+		if repo != nil {
+			fs.repo = repo
 		}
 	}
 }
@@ -100,7 +97,7 @@ func WithStoreInterval(interval time.Duration) Options {
 	}
 }
 
-// init Производит инициализацию файлового хранилища.
+// Init производит инициализацию файлового хранилища.
 func (fs *FileStore) init() error {
 	if fs.storeFile == "" {
 		return metricserErrors.EmptyFilename
@@ -151,7 +148,7 @@ func (fs *FileStore) restoreMetrics() error {
 
 	log.Println("Read metrics from file:", string(data))
 
-	err = fs.Restore(metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
+	err = fs.repo.Restore(metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
 	if err != nil {
 		return err
 	}
@@ -161,21 +158,22 @@ func (fs *FileStore) restoreMetrics() error {
 }
 
 // writeMetrics Записывает показатели всех метрик в файл в JSON-формате.
-func (fs *FileStore) writeMetrics() (int, error) {
-	prm, _ := fs.GetMetrics()
+func (fs *FileStore) writeMetrics() error {
+	prm, _ := fs.repo.GetMetrics()
 
 	data, err := json.Marshal(&prm)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	err = os.WriteFile(fs.storeFile, data, 0777)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	log.Printf("written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(prm.Gauges), len(prm.Counters))
-	return len(prm.Gauges) + len(prm.Counters), nil
+	//log.Printf("written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(prm.Gauges), len(prm.Counters))
+	//return len(prm.Gauges) + len(prm.Counters), nil
+	return nil
 }
 
 // WriteTicker Асинхронно записывает метрики в файл с определённым интервалом.
@@ -196,7 +194,7 @@ func (fs *FileStore) WriteTicker() error {
 		for {
 			select {
 			case <-ticker.C:
-				_, err := fs.WriteMetrics()
+				err := fs.WriteMetrics()
 				if err != nil {
 					log.Println("[ERROR] Failed to write metrics to disk -", err)
 				}
@@ -210,23 +208,23 @@ func (fs *FileStore) WriteTicker() error {
 }
 
 // WriteMetrics Записывает метрики в файл, сработает только если storeInterval равен 0.
-func (fs *FileStore) WriteMetrics() (int, error) {
+func (fs *FileStore) WriteMetrics() error {
 	if fs.storeFile != "" && fs.storeInterval == 0 {
-		number, err := fs.writeMetrics()
+		err := fs.writeMetrics()
 		if err != nil {
-			return 0, fmt.Errorf("failed to store metrics in repository")
+			return fmt.Errorf("failed to store metrics in repository")
 		}
-		return number, nil
+		return nil
 	}
 
-	return 0, nil
+	return nil
 }
 
 // Shutdown Штатно завершает работу файлового хранилища, сохраняя перед выходом значения метрик в файл.
 func (fs *FileStore) Shutdown() error {
 	defer fs.cancel()
 
-	_, err := fs.writeMetrics()
+	err := fs.writeMetrics()
 	if err != nil {
 		return err
 	}
