@@ -48,8 +48,10 @@ func WithDBStorer(repo Repo) Option {
 func WithFileStorer(fr FileRepo) Option {
 	return func(s *Storage) {
 		if fr != nil {
-			log.Println("[DEBUG] File storage plugin connected")
+			log.Println("[DEBUG] File store plugin connected")
 			s.fileRepo = fr
+		} else {
+			log.Println("[DEBUG] File store plugin is <nil>")
 		}
 	}
 }

@@ -35,6 +35,7 @@ type Storage struct {
 func New(dsn string) *Storage {
 	// Вернём nil в случае пустой строки DSN. Важно: если не возвращать `nil`, не пройдут автотесты.
 	if dsn == "" {
+		log.Println("[WARNING] Empty DSN given - database connection failed")
 		return nil
 	}
 

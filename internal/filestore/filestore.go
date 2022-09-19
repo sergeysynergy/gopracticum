@@ -41,6 +41,7 @@ func New(opts ...Options) *FileStore {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	fs := &FileStore{
+		repo:          memory.New(),
 		ctx:           ctx,
 		cancel:        cancel,
 		storeFile:     defaultStoreFile,
@@ -55,11 +56,6 @@ func New(opts ...Options) *FileStore {
 	// вернём nil в случае пустого имени файла
 	if fs.storeFile == "" {
 		return nil
-	}
-
-	// создаём Storer, если он не был проинициализирован через WithStorer
-	if fs.repo == nil {
-		fs.repo = memory.New()
 	}
 
 	// проинициализируем файловое хранилище

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/caarlos0/env/v6"
 	"github.com/sergeysynergy/metricser/config"
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/data/repository/pgsql"
 	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/sergeysynergy/metricser/internal/handlers"
@@ -57,20 +58,24 @@ func main() {
 	// Проверка на выполнение контракта интерфейса.
 	var _ storage.Repo = new(pgsql.Storage)
 	// Получим реализацию репозитория для работы с БД.
-	dbStorer := pgsql.New(cfg.DatabaseDSN)
+	var repo storage.Repo
+	repo = storage.Repo(pgsql.New(cfg.DatabaseDSN))
+	if repo == nil {
+		repo = storage.Repo(memory.New())
+	}
 
 	// Проверка на выполнение контракта интерфейса.
 	var _ storage.FileRepo = new(filestore.FileStore)
 	// Создадим файловое хранилище на базе Storage
 	fileStorer := filestore.New(
-		filestore.WithStorer(dbStorer),
+		filestore.WithStorer(repo),
 		filestore.WithStoreFile(cfg.StoreFile),
 		filestore.WithRestore(cfg.Restore),
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
 	uc := storage.New(
-		storage.WithDBStorer(dbStorer),
+		storage.WithDBStorer(repo),
 		storage.WithFileStorer(fileStorer),
 	)
 
