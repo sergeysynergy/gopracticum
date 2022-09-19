@@ -1,12 +1,13 @@
 // Package httpserver Пакет предназначен для запуска сервиса по сбору и хранения метрик на базе http-сервера.
-package httpserver
+package http
 
 import (
 	"context"
-	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 )
 
 // Server Хранит данные и объекты для реализации работы http-сервера.

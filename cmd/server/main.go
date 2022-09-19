@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/caarlos0/env/v6"
 	"github.com/sergeysynergy/metricser/config"
-	"github.com/sergeysynergy/metricser/internal/handlers"
-	"github.com/sergeysynergy/metricser/internal/httpserver"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/pgsql"
+	"github.com/sergeysynergy/metricser/internal/service/delivery/http"
+	"github.com/sergeysynergy/metricser/internal/service/delivery/http/handlers"
 	"github.com/sergeysynergy/metricser/internal/service/filestore"
 	storage2 "github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/sergeysynergy/metricser/pkg/crypter"
@@ -99,8 +99,8 @@ func main() {
 	)
 
 	// Проинициализируем http-сервер с использованием ранее объявленных обработчиков и файлового хранилища.
-	hs := httpserver.New(uc, h.GetRouter(),
-		httpserver.WithAddress(cfg.Addr),
+	hs := http.New(uc, h.GetRouter(),
+		http.WithAddress(cfg.Addr),
 	)
 
 	//go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования
@@ -111,7 +111,7 @@ func main() {
 }
 
 // graceDown Штатное завершение работы сервиса.
-func graceDown(uc storage2.UseCase, hs *httpserver.Server) {
+func graceDown(uc storage2.UseCase, hs *http.Server) {
 	// штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
