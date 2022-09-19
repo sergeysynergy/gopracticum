@@ -56,7 +56,7 @@ func WithAddress(addr string) Option {
 // Serve Запускает основные методы всего сервиса `Metricser`.
 func (s *Server) Serve() {
 	// вызовем рутину периодического сохранения данных метрик в файл, если хранилище проинициализировано
-	err := s.uc.WriteTicker()
+	err := s.uc.WriteTicker(nil)
 	if err != nil {
 		log.Println("[WARNING] Failed to start repository writing ticker - ", err)
 	}

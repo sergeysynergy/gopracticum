@@ -1,11 +1,16 @@
 package pgsql
 
 import (
+	metricserErrors "github.com/sergeysynergy/metricser/internal/errors"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 )
 
-func (s *Storage) Restore(m metrics.ProxyMetrics) error {
+func (s *Storage) Restore(prm *metrics.ProxyMetrics) error {
+	if prm == nil {
+		return metricserErrors.ErrEmptyProxyMetrics
+	}
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -18,8 +23,8 @@ func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 	txCounterInsert := tx.StmtContext(s.ctx, s.stmtCounterInsert)
 
 	// запишем значения gauge
-	if m.Gauges != nil {
-		for id, value := range m.Gauges {
+	if prm.Gauges != nil {
+		for id, value := range prm.Gauges {
 			var errGauge error
 			result, errGauge := txGaugeUpdate.Exec(id, value)
 			if errGauge != nil {
@@ -39,8 +44,8 @@ func (s *Storage) Restore(m metrics.ProxyMetrics) error {
 	}
 
 	// запишем значения counters
-	if m.Counters != nil {
-		for id, delta := range m.Counters {
+	if prm.Counters != nil {
+		for id, delta := range prm.Counters {
 			var errCounter error
 			result, errCounter := txCounterUpdate.Exec(id, delta)
 			if errCounter != nil {

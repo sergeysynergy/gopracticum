@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/caarlos0/env/v6"
 	"github.com/sergeysynergy/metricser/config"
+	"github.com/sergeysynergy/metricser/internal/data/repository/filestore"
 	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/data/repository/pgsql"
-	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/sergeysynergy/metricser/internal/handlers"
 	"github.com/sergeysynergy/metricser/internal/httpserver"
 	"github.com/sergeysynergy/metricser/internal/storage"
@@ -76,7 +76,6 @@ func main() {
 	var _ storage.FileRepo = new(filestore.FileStore)
 	// Создадим файловое хранилище на базе Storage
 	fileStorer := filestore.New(
-		filestore.WithStorer(repo),
 		filestore.WithStoreFile(cfg.StoreFile),
 		filestore.WithRestore(cfg.Restore),
 		filestore.WithStoreInterval(cfg.StoreInterval),

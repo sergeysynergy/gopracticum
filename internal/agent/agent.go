@@ -43,11 +43,9 @@ func New(opts ...Option) *Agent {
 	// Проверим, что репозиторий реализует контракт интерфейса.
 	var _ storage.Repo = new(memory.Repo)
 
-	repo := storage.New()
-
 	a := &Agent{
 		client:         resty.New(),
-		storage:        repo,
+		storage:        storage.New(),
 		pollInterval:   defaultPollInterval,
 		reportInterval: defaultReportInterval,
 		protocol:       defaultProtocol,
@@ -101,7 +99,7 @@ func WithKey(key string) Option {
 	}
 }
 
-func (a *Agent) Run() {
+func (a *Agent) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Функцию cancel нужно обязательно выполнить в коде, иначе сборщик мусора не удалит созданный дочерний контекст
 	// и произойдёт утечка памяти.

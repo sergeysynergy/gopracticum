@@ -25,7 +25,7 @@ func (r *Repo) Get(id string) (interface{}, error) {
 }
 
 // GetMetrics Массово извлекает значение метрик из хранилища Storage.
-func (r *Repo) GetMetrics() (metrics.ProxyMetrics, error) {
+func (r *Repo) GetMetrics() (*metrics.ProxyMetrics, error) {
 	prm := metrics.NewProxyMetrics()
 
 	r.gaugesMu.RLock()

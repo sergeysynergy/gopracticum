@@ -37,19 +37,16 @@ func (s *Storage) Get(id string) (interface{}, error) {
 	default:
 	}
 
-	return nil, metricserErrors.MetricNotImplemented
+	return nil, metricserErrors.ErrNotImplemented
 }
 
 // GetMetrics извлекает из БД значение всех метрик.
-func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
-	mcs := metrics.NewProxyMetrics()
-
-	//ctx, cancel := context.WithTimeout(parentCtx, queryTimeOut)
-	//defer cancel()
+func (s *Storage) GetMetrics() (*metrics.ProxyMetrics, error) {
+	prm := metrics.NewProxyMetrics()
 
 	rows, err := s.db.QueryContext(s.ctx, `SELECT id, type, value, delta FROM metrics`)
 	if err != nil {
-		return mcs, err
+		return nil, err
 	}
 	// обязательно закрываем перед возвратом функции
 	defer rows.Close()
@@ -59,7 +56,7 @@ func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 		m := model.Metrics{}
 		err = rows.Scan(&m.ID, &m.MType, &m.Value, &m.Delta)
 		if err != nil {
-			return mcs, err
+			return nil, err
 		}
 
 		switch m.MType {
@@ -67,12 +64,12 @@ func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 			if !m.Value.Valid {
 				log.Println("[WARNING] NULL gauge value")
 			}
-			mcs.Gauges[m.ID] = metrics.Gauge(m.Value.Float64)
+			prm.Gauges[m.ID] = metrics.Gauge(m.Value.Float64)
 		case metrics.TypeCounter:
 			if !m.Delta.Valid {
 				log.Println("[WARNING] NULL counter value")
 			}
-			mcs.Counters[m.ID] = metrics.Counter(m.Delta.Int64)
+			prm.Counters[m.ID] = metrics.Counter(m.Delta.Int64)
 		default:
 			log.Println("[WARNING] not implemented metrics type")
 		}
@@ -81,8 +78,8 @@ func (s *Storage) GetMetrics() (metrics.ProxyMetrics, error) {
 	// проверяем на ошибки
 	err = rows.Err()
 	if err != nil {
-		return mcs, err
+		return prm, err
 	}
 
-	return mcs, nil
+	return prm, nil
 }

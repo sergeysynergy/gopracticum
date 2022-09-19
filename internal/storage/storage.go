@@ -33,6 +33,8 @@ func New(opts ...Option) *Storage {
 		opt(s)
 	}
 
+	s.restoreMetricsFromFile()
+
 	return s
 }
 
@@ -59,7 +61,6 @@ func WithFileStorer(fr FileRepo) Option {
 // WithGauges Использует переданные значения gauge-метрик.
 func WithGauges(gauges map[string]metrics.Gauge) Option {
 	return func(s *Storage) {
-		//s.gauges = gauges
 		prm := metrics.NewProxyMetrics()
 		prm.Gauges = gauges
 		s.repo.Restore(prm)
@@ -69,9 +70,27 @@ func WithGauges(gauges map[string]metrics.Gauge) Option {
 // WithCounters Использует переданные значения counter-метрик.
 func WithCounters(counters map[string]metrics.Counter) Option {
 	return func(s *Storage) {
-		//s.counters = counters
 		prm := metrics.NewProxyMetrics()
 		prm.Counters = counters
 		s.repo.Restore(prm)
 	}
+}
+
+func (s *Storage) restoreMetricsFromFile() {
+	if s.fileRepo == nil {
+		return
+	}
+
+	// Получим метрики из фала.
+	prm, err := s.fileRepo.ReadMetrics()
+	if err != nil {
+		log.Printf("[WARNING] Failed to restore metrics from file - %s\n", err)
+	} else {
+		// Загрузим полученные из файла метрики в хранилище.
+		err = s.repo.Restore(prm)
+		if err != nil {
+			log.Printf("[WARNING] Failed to restore metrics from file - %s\n", err)
+		}
+	}
+	log.Printf("[INFO] Successfully restored metrics from")
 }

@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-// старый вид отправки запроса - обычным текстом
+// Старый вид отправки запроса - обычным текстом
 func (a *Agent) sendBasicRequest(ctx context.Context, wg *sync.WaitGroup, key string, value interface{}) {
 	defer wg.Done()
 
