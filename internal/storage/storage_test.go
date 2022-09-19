@@ -126,16 +126,16 @@ func TestStorageGet(t *testing.T) {
 
 func TestStoragePutGetMetrics(t *testing.T) {
 	type want struct {
-		get metrics.ProxyMetrics
+		get *metrics.ProxyMetrics
 	}
 	tests := []struct {
 		name string
-		put  metrics.ProxyMetrics
+		put  *metrics.ProxyMetrics
 		want want
 	}{
 		{
 			name: "Basic put/get",
-			put: metrics.ProxyMetrics{
+			put: &metrics.ProxyMetrics{
 				Gauges: map[string]metrics.Gauge{
 					"Alloc":         3407240,
 					"BuckHashSys":   3972,
@@ -160,7 +160,7 @@ func TestStoragePutGetMetrics(t *testing.T) {
 				},
 			},
 			want: want{
-				get: metrics.ProxyMetrics{
+				get: &metrics.ProxyMetrics{
 					Gauges: map[string]metrics.Gauge{
 						"Alloc":         3407240,
 						"BuckHashSys":   3972,

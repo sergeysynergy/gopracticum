@@ -148,7 +148,7 @@ func (fs *FileStore) restoreMetrics() error {
 
 	log.Println("Read metrics from file:", string(data))
 
-	err = fs.repo.Restore(metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
+	err = fs.repo.Restore(&metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
 	if err != nil {
 		return err
 	}

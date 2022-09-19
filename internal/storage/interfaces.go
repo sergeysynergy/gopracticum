@@ -16,10 +16,10 @@ type Repo interface {
 	Put(string, interface{}) error
 	Get(string) (interface{}, error)
 
-	PutMetrics(metrics.ProxyMetrics) error
-	GetMetrics() (metrics.ProxyMetrics, error)
+	PutMetrics(*metrics.ProxyMetrics) error
+	GetMetrics() (*metrics.ProxyMetrics, error)
 
-	Restore(metrics.ProxyMetrics) error
+	Restore(*metrics.ProxyMetrics) error
 }
 
 type FileRepo interface {

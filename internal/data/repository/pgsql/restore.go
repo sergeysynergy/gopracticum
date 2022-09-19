@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (s *Storage) Restore(m metrics.ProxyMetrics) error {
+func (s *Storage) Restore(m *metrics.ProxyMetrics) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

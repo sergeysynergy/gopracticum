@@ -5,6 +5,6 @@ import (
 )
 
 // Restore Массово загружает переданные значения метрик в хранилища Storage.
-func (s *Storage) Restore(m metrics.ProxyMetrics) error {
-	return s.repo.Restore(m)
+func (s *Storage) Restore(prm *metrics.ProxyMetrics) error {
+	return s.repo.Restore(prm)
 }

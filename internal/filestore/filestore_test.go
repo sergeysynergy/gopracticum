@@ -11,7 +11,7 @@ import (
 func TestFileStoreRestoreMetrics(t *testing.T) {
 	type want struct {
 		wantErr bool
-		body    metrics.ProxyMetrics
+		body    *metrics.ProxyMetrics
 	}
 	tests := []struct {
 		name     string
@@ -37,7 +37,7 @@ func TestFileStoreRestoreMetrics(t *testing.T) {
 			body: []byte(`{"Gauges":{"Alloc":3407240,"BuckHashSys":3972,"Frees":6610,"GCCPUFraction":0.000002760847079840539,"GCSys":4465608,"HeapAlloc":3407240,"HeapIdle":3563520,"HeapInuse":4300800,"HeapObjects":5740,"HeapReleased":3203072,"HeapSys":7864320,"LastGC":1650034139879352300,"Lookups":0,"MCacheInuse":14400,"MCacheSys":16384,"MSpanInuse":68816,"MSpanSys":81920}}`),
 			want: want{
 				wantErr: false,
-				body: metrics.ProxyMetrics{
+				body: &metrics.ProxyMetrics{
 					Gauges: map[string]metrics.Gauge{
 						"Alloc":         3407240,
 						"BuckHashSys":   3972,

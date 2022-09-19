@@ -9,7 +9,7 @@ import (
 func ExampleStorage_Restore() {
 	st := New()
 
-	prm := metrics.ProxyMetrics{
+	prm := &metrics.ProxyMetrics{
 		Gauges: map[string]metrics.Gauge{
 			metrics.Alloc:       42.24,
 			metrics.BuckHashSys: 77,
