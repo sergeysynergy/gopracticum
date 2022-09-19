@@ -207,6 +207,8 @@ func (s *Storage) Ping() error {
 func (s *Storage) Shutdown() error {
 	s.cancel()
 
+	s.ctx.Done()
+
 	err := s.closeStatements()
 	if err != nil {
 		return err
@@ -217,7 +219,7 @@ func (s *Storage) Shutdown() error {
 		return err
 	}
 
-	log.Println("connection to database closed")
+	log.Println("[DEBUG] Gracefully close connection to database")
 	return nil
 }
 

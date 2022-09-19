@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
@@ -14,7 +15,13 @@ import (
 	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"github.com/sergeysynergy/metricser/pkg/utils"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
+
+const graceTimeout = 20 * time.Second
 
 var (
 	buildVersion string
@@ -86,21 +93,56 @@ func main() {
 		log.Println("[WARNING] Failed to get private key - ", err)
 	}
 	h := handlers.New(uc,
-		//handlers.WithFileStorer(fileStorer),
-		//handlers.WithDBStorer(dbStorer),
 		handlers.WithKey(cfg.Key),
 		handlers.WithPrivateKey(privateKey),
 		handlers.WithTrustedSubnet(cfg.TrustedSubnet),
 	)
 
-	// Проинициализируем сервер с использованием ранее объявленных обработчиков и файлового хранилища.
-	s := httpserver.New(uc, h.GetRouter(),
+	// Проинициализируем http-сервер с использованием ранее объявленных обработчиков и файлового хранилища.
+	hs := httpserver.New(uc, h.GetRouter(),
 		httpserver.WithAddress(cfg.Addr),
-		//httpserver.WithFileStorer(fileStorer),
-		//httpserver.WithDBStorer(dbStorer),
 	)
 
 	//go http.ListenAndServe(":8090", nil) // запускаем сервер для нужд профилирования
 
-	s.Serve() // запускаем основной http-сервер
+	go hs.Serve() // запускаем http-сервер
+
+	graceDown(uc, hs)
+}
+
+// graceDown Штатное завершение работы сервиса.
+func graceDown(uc storage.UseCase, hs *httpserver.Server) {
+	// штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	<-sig
+
+	// определяем время для штатного завершения работы сервера
+	// необходимо на случай вечного ожидания закрытия всех подключений к серверу
+	shutdownCtx, shutdownCtxCancel := context.WithTimeout(context.Background(), graceTimeout)
+	defer shutdownCtxCancel()
+	// принудительно завершаем работу по истечении срока s.graceTimeout
+	go func() {
+		<-shutdownCtx.Done()
+		if shutdownCtx.Err() == context.DeadlineExceeded {
+			log.Fatal("[ERROR] Graceful shutdown timed out! Forcing exit.")
+		}
+	}()
+
+	// штатно завершим работу файлового хранилища и БД
+	err := uc.Shutdown()
+	if err != nil {
+		log.Fatal("[ERROR] Shutdown error - ", err)
+	}
+
+	// Штатно завершаем работу HTTP-сервера не прерывая никаких активных подключений.
+	// Завершение работы выполняется в порядке:
+	// - закрытия всех открытых подключений;
+	// - затем закрытия всех незанятых подключений;
+	// - а затем бесконечного ожидания возврата подключений в режим ожидания;
+	// - наконец, завершения работы.
+	err = hs.Shutdown()
+	if err != nil {
+		log.Fatal("[ERROR] Server shutdown error - ", err)
+	}
 }
