@@ -4,6 +4,7 @@ package storage
 
 import (
 	"errors"
+	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 )
@@ -23,10 +24,10 @@ type Storage struct {
 type Option func(storage *Storage)
 
 // New Создаёт новый объект хранилища метрик Storage.
-func New(repo Repo, fileRepo FileRepo, opts ...Option) *Storage {
+func New(opts ...Option) *Storage {
 	s := &Storage{
-		repo:     repo,
-		fileRepo: fileRepo,
+		repo:     memory.New(),
+		fileRepo: nil,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -38,7 +39,7 @@ func New(repo Repo, fileRepo FileRepo, opts ...Option) *Storage {
 func WithDBStorer(repo Repo) Option {
 	return func(s *Storage) {
 		if repo != nil {
-			log.Println("database plugin connected")
+			log.Println("[DEBUG] Database plugin connected")
 			s.repo = repo
 		}
 	}
@@ -47,7 +48,7 @@ func WithDBStorer(repo Repo) Option {
 func WithFileStorer(fr FileRepo) Option {
 	return func(s *Storage) {
 		if fr != nil {
-			log.Println("file storage plugin connected")
+			log.Println("[DEBUG] File storage plugin connected")
 			s.fileRepo = fr
 		}
 	}

@@ -69,7 +69,7 @@ func main() {
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
-	uc := storage.New(dbStorer, fileStorer,
+	uc := storage.New(
 		storage.WithDBStorer(dbStorer),
 		storage.WithFileStorer(fileStorer),
 	)

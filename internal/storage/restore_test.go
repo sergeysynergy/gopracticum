@@ -2,13 +2,12 @@ package storage
 
 import (
 	"fmt"
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 )
 
 func ExampleStorage_Restore() {
-	st := New(memory.New(), nil)
+	st := New()
 
 	prm := metrics.ProxyMetrics{
 		Gauges: map[string]metrics.Gauge{

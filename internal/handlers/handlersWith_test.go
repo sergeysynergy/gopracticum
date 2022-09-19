@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"net"
@@ -46,7 +45,7 @@ func TestWithTrustedSubnet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New(storage.New(memory.New(), nil),
+			handler := New(storage.New(),
 				WithTrustedSubnet(tt.cidr),
 			)
 			assert.Equal(t, tt.want.net, handler.trustedSubnet)

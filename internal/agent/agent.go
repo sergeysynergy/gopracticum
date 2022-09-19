@@ -43,7 +43,7 @@ func New(opts ...Option) *Agent {
 	// Проверим, что репозиторий реализует контракт интерфейса.
 	var _ storage.Repo = new(memory.Repo)
 
-	repo := storage.New(memory.New(), nil)
+	repo := storage.New()
 
 	a := &Agent{
 		client:         resty.New(),

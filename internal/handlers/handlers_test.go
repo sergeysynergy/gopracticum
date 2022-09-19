@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
@@ -47,7 +46,7 @@ func TestPost(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New(storage.New(memory.New(), nil))
+			handler := New(storage.New())
 			r := chi.NewRouter()
 			r.Post("/update/{type}/{name}/{value}", handler.Post)
 			ts := httptest.NewServer(r)
@@ -90,7 +89,7 @@ func TestGet(t *testing.T) {
 	}{
 		{
 			name: "Gauge ok",
-			handler: New(storage.New(memory.New(), nil, storage.WithGauges(
+			handler: New(storage.New(storage.WithGauges(
 				map[string]metrics.Gauge{"Alloc": 1221.23},
 			))),
 			request: "/value/gauge/Alloc",
@@ -101,7 +100,7 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name:    "Gauge not found",
-			handler: New(storage.New(memory.New(), nil)),
+			handler: New(storage.New()),
 			request: "/value/gauge/NotFound",
 			want: want{
 				statusCode: http.StatusNotFound,
@@ -110,7 +109,7 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name: "Counter ok",
-			handler: New(storage.New(memory.New(), nil, storage.WithCounters(
+			handler: New(storage.New(storage.WithCounters(
 				map[string]metrics.Counter{"PollCount": 42},
 			))),
 			request: "/value/counter/PollCount",
@@ -121,7 +120,7 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name:    "Counter not found",
-			handler: New(storage.New(memory.New(), nil)),
+			handler: New(storage.New()),
 			request: "/value/counter/NotFound",
 			want: want{
 				statusCode: http.StatusNotFound,
@@ -130,7 +129,7 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name:    "Not implemented",
-			handler: New(storage.New(memory.New(), nil)),
+			handler: New(storage.New()),
 			request: "/value/not/implemented",
 			want: want{
 				statusCode: http.StatusNotImplemented,
@@ -174,7 +173,7 @@ func TestList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := New(storage.New(memory.New(), nil))
+			handler := New(storage.New())
 			r := chi.NewRouter()
 			r.Get("/", handler.List)
 			ts := httptest.NewServer(r)
