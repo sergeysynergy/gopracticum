@@ -1,7 +1,7 @@
 package pgsql
 
 import (
-	"github.com/sergeysynergy/metricser/internal/data/model"
+	"github.com/sergeysynergy/metricser/internal/service/data/model"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 )

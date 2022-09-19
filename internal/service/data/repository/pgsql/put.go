@@ -1,7 +1,7 @@
 package pgsql
 
 import (
-	metricserErrors "github.com/sergeysynergy/metricser/internal/errors"
+	metricserErrors "github.com/sergeysynergy/metricser/internal/service/errors"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 

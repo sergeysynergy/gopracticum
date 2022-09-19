@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"github.com/caarlos0/env/v6"
 	"github.com/sergeysynergy/metricser/config"
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
-	"github.com/sergeysynergy/metricser/internal/data/repository/pgsql"
-	"github.com/sergeysynergy/metricser/internal/filestore"
 	"github.com/sergeysynergy/metricser/internal/handlers"
 	"github.com/sergeysynergy/metricser/internal/httpserver"
-	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
+	"github.com/sergeysynergy/metricser/internal/service/data/repository/pgsql"
+	"github.com/sergeysynergy/metricser/internal/service/filestore"
+	storage2 "github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"github.com/sergeysynergy/metricser/pkg/utils"
 	"log"
@@ -63,17 +63,17 @@ func main() {
 	log.Printf("Receive config: %#v\n", cfg)
 
 	// Проверка на выполнение контракта интерфейса.
-	var _ storage.Repo = new(pgsql.Storage)
+	var _ storage2.Repo = new(pgsql.Storage)
 
 	// Получим реализацию репозитория для работы с БД.
-	repo := storage.Repo(memory.New())
+	repo := storage2.Repo(memory.New())
 	repoDB := pgsql.New(cfg.DatabaseDSN)
 	if repoDB != nil {
-		repo = storage.Repo(repoDB)
+		repo = storage2.Repo(repoDB)
 	}
 
 	// Проверка на выполнение контракта интерфейса.
-	var _ storage.FileRepo = new(filestore.FileStore)
+	var _ storage2.FileRepo = new(filestore.FileStore)
 	// Создадим файловое хранилище на базе Storage
 	fileStorer := filestore.New(
 		filestore.WithStorer(repo),
@@ -82,9 +82,9 @@ func main() {
 		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
-	uc := storage.New(
-		storage.WithDBStorer(repo),
-		storage.WithFileStorer(fileStorer),
+	uc := storage2.New(
+		storage2.WithDBStorer(repo),
+		storage2.WithFileStorer(fileStorer),
 	)
 
 	// Подключим обработчики запросов.
@@ -111,7 +111,7 @@ func main() {
 }
 
 // graceDown Штатное завершение работы сервиса.
-func graceDown(uc storage.UseCase, hs *httpserver.Server) {
+func graceDown(uc storage2.UseCase, hs *httpserver.Server) {
 	// штатное завершение по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)

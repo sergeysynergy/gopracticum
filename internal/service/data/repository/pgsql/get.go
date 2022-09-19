@@ -2,8 +2,8 @@ package pgsql
 
 import (
 	"fmt"
-	"github.com/sergeysynergy/metricser/internal/data/model"
-	metricserErrors "github.com/sergeysynergy/metricser/internal/errors"
+	"github.com/sergeysynergy/metricser/internal/service/data/model"
+	metricserErrors "github.com/sergeysynergy/metricser/internal/service/errors"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 

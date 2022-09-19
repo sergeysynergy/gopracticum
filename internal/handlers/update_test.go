@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

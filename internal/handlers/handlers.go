@@ -5,7 +5,7 @@ import (
 	"crypto/rsa"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
 	"net"
 )

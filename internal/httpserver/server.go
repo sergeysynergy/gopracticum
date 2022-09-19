@@ -3,11 +3,10 @@ package httpserver
 
 import (
 	"context"
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
 // Server Хранит данные и объекты для реализации работы http-сервера.

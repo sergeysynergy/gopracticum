@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/sergeysynergy/metricser/internal/storage"
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/stretchr/testify/assert"
 	"net"
 	"testing"

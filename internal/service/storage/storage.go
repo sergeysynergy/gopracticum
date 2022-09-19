@@ -4,7 +4,7 @@ package storage
 
 import (
 	"errors"
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
+	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 )

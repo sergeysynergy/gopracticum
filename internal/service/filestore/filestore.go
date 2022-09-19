@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
+	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
+	metricserErrors "github.com/sergeysynergy/metricser/internal/service/errors"
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
 	"os"
 	"time"
 
-	metricserErrors "github.com/sergeysynergy/metricser/internal/errors"
-	"github.com/sergeysynergy/metricser/internal/storage"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 

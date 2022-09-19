@@ -4,14 +4,13 @@ package pgsql
 import (
 	"context"
 	"database/sql"
+	"github.com/sergeysynergy/metricser/internal/service/data/model"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 	"sync"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-
-	"github.com/sergeysynergy/metricser/internal/data/model"
 )
 
 // Storage хранит подключение к БД, контекст выполнения и список SQL-утверждений.

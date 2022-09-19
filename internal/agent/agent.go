@@ -5,20 +5,19 @@ import (
 	"context"
 	"crypto/rsa"
 	"github.com/go-resty/resty/v2"
-	"github.com/sergeysynergy/metricser/internal/data/repository/memory"
+	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
+	storage2 "github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
 	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/sergeysynergy/metricser/internal/storage"
 )
 
 type Agent struct {
 	client         *resty.Client
-	storage        storage.Repo
+	storage        storage2.Repo
 	pollInterval   time.Duration
 	reportInterval time.Duration
 	protocol       string
@@ -41,9 +40,9 @@ func New(opts ...Option) *Agent {
 	)
 
 	// Проверим, что репозиторий реализует контракт интерфейса.
-	var _ storage.Repo = new(memory.Repo)
+	var _ storage2.Repo = new(memory.Repo)
 
-	repo := storage.New()
+	repo := storage2.New()
 
 	a := &Agent{
 		client:         resty.New(),
