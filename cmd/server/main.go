@@ -57,11 +57,12 @@ func main() {
 
 	// Проверка на выполнение контракта интерфейса.
 	var _ storage.Repo = new(pgsql.Storage)
+
 	// Получим реализацию репозитория для работы с БД.
-	var repo storage.Repo
-	repo = storage.Repo(pgsql.New(cfg.DatabaseDSN))
-	if repo == nil {
-		repo = storage.Repo(memory.New())
+	repo := storage.Repo(memory.New())
+	repoDB := pgsql.New(cfg.DatabaseDSN)
+	if repoDB != nil {
+		repo = storage.Repo(repoDB)
 	}
 
 	// Проверка на выполнение контракта интерфейса.
