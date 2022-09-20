@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
-	metricserErrors "github.com/sergeysynergy/metricser/internal/service/errors"
+	serviceErrors "github.com/sergeysynergy/metricser/internal/service/errors"
 	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
 	"os"
@@ -100,7 +100,7 @@ func WithStoreInterval(interval time.Duration) Options {
 // Init производит инициализацию файлового хранилища.
 func (fs *FileStore) init() error {
 	if fs.storeFile == "" {
-		return metricserErrors.EmptyFilename
+		return serviceErrors.ErrEmptyFilestoreName
 	}
 
 	err := fs.restoreMetrics()
@@ -180,7 +180,7 @@ func (fs *FileStore) writeMetrics() error {
 func (fs *FileStore) WriteTicker() error {
 	// тикер должен работать только когда задано имя файла
 	if fs.storeFile == "" {
-		return metricserErrors.EmptyFilename
+		return serviceErrors.ErrEmptyFilestoreName
 	}
 	// ... и storeInterval больше нуля
 	if fs.storeInterval == 0 {
