@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package demo;
+package metricser;
 
-option go_package = "demo/proto";
+option go_package = "metricser/proto";
 
 message User {
   string name = 1;  // имя пользователя

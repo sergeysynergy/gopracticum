@@ -107,12 +107,14 @@ func (s *Service) runGraceDown() {
 func (s *Service) startGRPCServer() {
 	go func() {
 		// определяем порт для сервера
-		listen, err := net.Listen("tcp", s.cfg.GRPCAddr)
+		port := ":3200"
+		//listen, err := net.Listen("tcp", s.cfg.GRPCAddr)
+		listen, err := net.Listen("tcp", port)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Println("[DEBUG] gRPC server started at", s.cfg.GRPCAddr)
+		log.Println("[DEBUG] gRPC server started at", port)
 		// получаем запрос gRPC
 		if err = s.grpcServer.Serve(listen); err != nil {
 			log.Fatal(err)
@@ -121,8 +123,8 @@ func (s *Service) startGRPCServer() {
 }
 
 func (s *Service) Run() {
-	//go s.httpServer.Serve() // запускаем http-сервер
-	s.startGRPCServer()
+	go s.httpServer.Serve() // запускаем http-сервер
+	s.startGRPCServer()     // запускаем gRPC-сервер
 
 	s.runGraceDown()
 }

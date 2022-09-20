@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package metricser;
+
+option go_package = "metricser/proto";
+

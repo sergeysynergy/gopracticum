@@ -1,6 +1,6 @@
 module github.com/sergeysynergy/metricser
 
-go 1.17
+go 1.18
 
 replace github.com/sergeysynergy/metricser => ../gopracticum
 

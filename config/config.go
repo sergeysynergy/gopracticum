@@ -34,8 +34,8 @@ func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 }
 
 type ServerConf struct {
-	Addr            string        `env:"ADDRESS" json:"address"`
-	GRPCAddr        string        `env:"GRPC_ADDRESS" json:"grpc_addr"`
+	Addr string `env:"ADDRESS" json:"address"`
+	//GRPCAddr        string        `env:"GRPC_ADDRESS" json:"grpc_addr"`
 	StoreFile       string        `env:"STORE_FILE" json:"store_file"`
 	Restore         bool          `env:"RESTORE" json:"restore"`
 	MyStoreInterval Duration      `json:"store_interval"`
@@ -50,8 +50,8 @@ type ServerConf struct {
 
 func NewServerConf() *ServerConf {
 	defaultCfg := &ServerConf{
-		Addr:          "127.0.0.1:8080",
-		GRPCAddr:      ":3200",
+		Addr: "127.0.0.1:8080",
+		//GRPCAddr:      ":3200",
 		StoreFile:     "/tmp/devops-metrics-pgsql.json",
 		Restore:       true,
 		StoreInterval: 300 * time.Second,
