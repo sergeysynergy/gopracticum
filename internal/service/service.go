@@ -88,10 +88,6 @@ func (s *Service) runGraceDown() {
 		log.Fatal("[ERROR] Shutdown error - ", err)
 	}
 
-	// штатно завершим работу gRPC-сервера
-	s.grpcServer.GracefulStop()
-	log.Println("[DEBUG] Gracefully shutdown gRPC-server")
-
 	// Штатно завершаем работу HTTP-сервера не прерывая никаких активных подключений.
 	// Завершение работы выполняется в порядке:
 	// - закрытия всех открытых подключений;
@@ -102,6 +98,10 @@ func (s *Service) runGraceDown() {
 	if err != nil {
 		log.Fatal("[ERROR] Server shutdown error - ", err)
 	}
+
+	// штатно завершим работу gRPC-сервера
+	s.grpcServer.GracefulStop()
+	log.Println("[DEBUG] Gracefully shutdown gRPC-server")
 }
 
 func (s *Service) startGRPCServer() {
