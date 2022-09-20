@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/sergeysynergy/metricser/config"
-	serviceConst "github.com/sergeysynergy/metricser/internal/service/const"
+	serviceConst "github.com/sergeysynergy/metricser/internal/service/consts"
 	serviceHTTP "github.com/sergeysynergy/metricser/internal/service/delivery/http"
 	"github.com/sergeysynergy/metricser/internal/service/delivery/http/handlers"
 	"github.com/sergeysynergy/metricser/internal/service/storage"
