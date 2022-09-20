@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -19,22 +20,267 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Gauge struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id    string  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Value float64 `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *Gauge) Reset() {
+	*x = Gauge{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_metrics_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Gauge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Gauge) ProtoMessage() {}
+
+func (x *Gauge) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Gauge.ProtoReflect.Descriptor instead.
+func (*Gauge) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Gauge) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Gauge) GetValue() float64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+type Counter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id    string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Delta int64  `protobuf:"varint,2,opt,name=delta,proto3" json:"delta,omitempty"`
+}
+
+func (x *Counter) Reset() {
+	*x = Counter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_metrics_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Counter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Counter) ProtoMessage() {}
+
+func (x *Counter) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Counter.ProtoReflect.Descriptor instead.
+func (*Counter) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Counter) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Counter) GetDelta() int64 {
+	if x != nil {
+		return x.Delta
+	}
+	return 0
+}
+
+type ListMetricsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ListMetricsRequest) Reset() {
+	*x = ListMetricsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_metrics_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListMetricsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMetricsRequest) ProtoMessage() {}
+
+func (x *ListMetricsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMetricsRequest.ProtoReflect.Descriptor instead.
+func (*ListMetricsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{2}
+}
+
+type ListMetricsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Gauges   []*Gauge   `protobuf:"bytes,1,rep,name=gauges,proto3" json:"gauges,omitempty"`
+	Counters []*Counter `protobuf:"bytes,2,rep,name=counters,proto3" json:"counters,omitempty"`
+}
+
+func (x *ListMetricsResponse) Reset() {
+	*x = ListMetricsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_metrics_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListMetricsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMetricsResponse) ProtoMessage() {}
+
+func (x *ListMetricsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMetricsResponse.ProtoReflect.Descriptor instead.
+func (*ListMetricsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ListMetricsResponse) GetGauges() []*Gauge {
+	if x != nil {
+		return x.Gauges
+	}
+	return nil
+}
+
+func (x *ListMetricsResponse) GetCounters() []*Counter {
+	if x != nil {
+		return x.Counters
+	}
+	return nil
+}
+
 var File_proto_metrics_proto protoreflect.FileDescriptor
 
 var file_proto_metrics_proto_rawDesc = []byte{
 	0x0a, 0x13, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x09, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x65, 0x72,
+	0x22, 0x2d, 0x0a, 0x05, 0x47, 0x61, 0x75, 0x67, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c,
+	0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x01, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x22,
+	0x2f, 0x0a, 0x07, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x64, 0x65,
+	0x6c, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x64, 0x65, 0x6c, 0x74, 0x61,
+	0x22, 0x14, 0x0a, 0x12, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x6f, 0x0a, 0x13, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65,
+	0x74, 0x72, 0x69, 0x63, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a,
+	0x06, 0x67, 0x61, 0x75, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x10, 0x2e,
+	0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x65, 0x72, 0x2e, 0x47, 0x61, 0x75, 0x67, 0x65, 0x52,
+	0x06, 0x67, 0x61, 0x75, 0x67, 0x65, 0x73, 0x12, 0x2e, 0x0a, 0x08, 0x63, 0x6f, 0x75, 0x6e, 0x74,
+	0x65, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x6d, 0x65, 0x74, 0x72,
+	0x69, 0x63, 0x73, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x65, 0x72, 0x52, 0x08, 0x63,
+	0x6f, 0x75, 0x6e, 0x74, 0x65, 0x72, 0x73, 0x32, 0x57, 0x0a, 0x07, 0x4d, 0x65, 0x74, 0x72, 0x69,
+	0x63, 0x73, 0x12, 0x4c, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63,
+	0x73, 0x12, 0x1d, 0x2e, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x65, 0x72, 0x2e, 0x4c, 0x69,
+	0x73, 0x74, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x1e, 0x2e, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x65, 0x72, 0x2e, 0x4c, 0x69, 0x73,
+	0x74, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
 	0x42, 0x11, 0x5a, 0x0f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x65, 0x72, 0x2f, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var file_proto_metrics_proto_goTypes = []interface{}{}
+var (
+	file_proto_metrics_proto_rawDescOnce sync.Once
+	file_proto_metrics_proto_rawDescData = file_proto_metrics_proto_rawDesc
+)
+
+func file_proto_metrics_proto_rawDescGZIP() []byte {
+	file_proto_metrics_proto_rawDescOnce.Do(func() {
+		file_proto_metrics_proto_rawDescData = protoimpl.X.CompressGZIP(file_proto_metrics_proto_rawDescData)
+	})
+	return file_proto_metrics_proto_rawDescData
+}
+
+var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_metrics_proto_goTypes = []interface{}{
+	(*Gauge)(nil),               // 0: metricser.Gauge
+	(*Counter)(nil),             // 1: metricser.Counter
+	(*ListMetricsRequest)(nil),  // 2: metricser.ListMetricsRequest
+	(*ListMetricsResponse)(nil), // 3: metricser.ListMetricsResponse
+}
 var file_proto_metrics_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: metricser.ListMetricsResponse.gauges:type_name -> metricser.Gauge
+	1, // 1: metricser.ListMetricsResponse.counters:type_name -> metricser.Counter
+	2, // 2: metricser.Metrics.ListMetrics:input_type -> metricser.ListMetricsRequest
+	3, // 3: metricser.Metrics.ListMetrics:output_type -> metricser.ListMetricsResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_metrics_proto_init() }
@@ -42,18 +288,69 @@ func file_proto_metrics_proto_init() {
 	if File_proto_metrics_proto != nil {
 		return
 	}
+	if !protoimpl.UnsafeEnabled {
+		file_proto_metrics_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Gauge); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_metrics_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Counter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_metrics_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ListMetricsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_metrics_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ListMetricsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_metrics_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   4,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_proto_metrics_proto_goTypes,
 		DependencyIndexes: file_proto_metrics_proto_depIdxs,
+		MessageInfos:      file_proto_metrics_proto_msgTypes,
 	}.Build()
 	File_proto_metrics_proto = out.File
 	file_proto_metrics_proto_rawDesc = nil

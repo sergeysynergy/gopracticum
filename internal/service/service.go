@@ -47,7 +47,9 @@ func (s *Service) initGRPCServer() {
 	// создаём gRPC-сервер без зарегистрированной службы
 	s.grpcServer = grpc.NewServer()
 	// регистрируем сервис
-	pb.RegisterUsersServer(s.grpcServer, &serviceGRPC.UsersServer{})
+	//pb.RegisterUsersServer(s.grpcServer, &serviceGRPC.UsersServer{})
+	service := serviceGRPC.New(s.uc)
+	pb.RegisterMetricsServer(s.grpcServer, service)
 }
 
 func (s *Service) initHTTPServer() {
