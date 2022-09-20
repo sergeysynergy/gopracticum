@@ -75,3 +75,10 @@ func WithCounters(counters map[string]metrics.Counter) Option {
 		s.repo.Restore(prm)
 	}
 }
+
+func (s *Storage) init() {
+	err := s.snapShotRestore()
+	if err != nil {
+		log.Printf("[WARNING] Failed to restore metrics from filestore - %s\n", err)
+	}
+}

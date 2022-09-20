@@ -99,14 +99,14 @@ func WithStoreInterval(interval time.Duration) Options {
 
 // Init производит инициализацию файлового хранилища.
 func (fs *FileStore) init() error {
-	if fs.storeFile == "" {
-		return serviceErrors.ErrEmptyFilestoreName
-	}
-
-	err := fs.restoreMetrics()
-	if err != nil {
-		log.Printf("[WARNING] Failed to restore metrics from file '%s' - %s\n", fs.storeFile, err)
-	}
+	//if fs.storeFile == "" {
+	//	return serviceErrors.ErrEmptyFilestoreName
+	//}
+	//
+	//err := fs.restoreMetrics()
+	//if err != nil {
+	//	log.Printf("[WARNING] Failed to restore metrics from file '%s' - %s\n", fs.storeFile, err)
+	//}
 
 	return nil
 }
