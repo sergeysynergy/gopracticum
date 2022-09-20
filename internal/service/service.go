@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	"crypto/rsa"
+	serviceGRPC "github.com/sergeysynergy/metricser/internal/service/delivery/grpc"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +16,7 @@ import (
 	serviceHTTP "github.com/sergeysynergy/metricser/internal/service/delivery/http"
 	"github.com/sergeysynergy/metricser/internal/service/delivery/http/handlers"
 	"github.com/sergeysynergy/metricser/internal/service/storage"
+	pb "github.com/sergeysynergy/metricser/proto"
 )
 
 type Service struct {
@@ -20,6 +24,7 @@ type Service struct {
 	privateKey *rsa.PrivateKey
 	uc         storage.UseCase
 	httpServer *serviceHTTP.Server
+	grpcServer *grpc.Server
 }
 
 func New(cfg *config.ServerConf, uc storage.UseCase) *Service {
@@ -35,9 +40,16 @@ func New(cfg *config.ServerConf, uc storage.UseCase) *Service {
 
 func (s *Service) init() {
 	s.initHTTPServer()
+	s.initGRPCServer()
 }
 
-// initHTTPServer Проинициализируем http-сервер.
+func (s *Service) initGRPCServer() {
+	// создаём gRPC-сервер без зарегистрированной службы
+	s.grpcServer = grpc.NewServer()
+	// регистрируем сервис
+	pb.RegisterUsersServer(s.grpcServer, &serviceGRPC.UsersServer{})
+}
+
 func (s *Service) initHTTPServer() {
 	// Получим обработчики для http-сервера
 	h := handlers.New(s.uc,
@@ -76,6 +88,10 @@ func (s *Service) runGraceDown() {
 		log.Fatal("[ERROR] Shutdown error - ", err)
 	}
 
+	// штатно завершим работу gRPC-сервера
+	s.grpcServer.GracefulStop()
+	log.Println("[DEBUG] Gracefully shutdown gRPC-server")
+
 	// Штатно завершаем работу HTTP-сервера не прерывая никаких активных подключений.
 	// Завершение работы выполняется в порядке:
 	// - закрытия всех открытых подключений;
@@ -88,8 +104,25 @@ func (s *Service) runGraceDown() {
 	}
 }
 
+func (s *Service) startGRPCServer() {
+	go func() {
+		// определяем порт для сервера
+		listen, err := net.Listen("tcp", s.cfg.GRPCAddr)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println("[DEBUG] gRPC server started at", s.cfg.GRPCAddr)
+		// получаем запрос gRPC
+		if err = s.grpcServer.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
+	}()
+}
+
 func (s *Service) Run() {
-	go s.httpServer.Serve() // запускаем http-сервер
+	//go s.httpServer.Serve() // запускаем http-сервер
+	s.startGRPCServer()
 
 	s.runGraceDown()
 }
