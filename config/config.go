@@ -1,8 +1,10 @@
 package config
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"log"
 	"os"
 	"strings"
@@ -42,6 +44,7 @@ type ServerConf struct {
 	Key             string        `env:"KEY"`
 	TrustedSubnet   string        `env:"TRUSTED_SUBNET"`
 	ConfigFile      string
+	PrivateKey      *rsa.PrivateKey
 }
 
 func NewServerConf() *ServerConf {
@@ -64,6 +67,16 @@ func NewServerConf() *ServerConf {
 	}
 
 	return defaultCfg
+}
+
+func (c *ServerConf) Init() {
+	pk, err := crypter.OpenPrivate(c.CryptoKey)
+	if err != nil {
+		log.Println("[WARNING] Failed to get private key -", err)
+	} else {
+		c.PrivateKey = pk
+		log.Println("[DEBUG] Encryption enabled using RSA")
+	}
 }
 
 type AgentConfig struct {

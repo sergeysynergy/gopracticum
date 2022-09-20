@@ -62,7 +62,7 @@ func WithTrustedSubnet(cidr string) Option {
 	return func(h *Handler) {
 		_, ipNet, err := net.ParseCIDR(cidr)
 		if err != nil {
-			log.Println("[ERROR] Failed to parse CIDR! Trusted network will NOT BE used -", err)
+			log.Println("[WARNING] Failed to parse CIDR! Trusted network will NOT BE used -", err)
 			return
 		}
 		h.trustedSubnet = ipNet
