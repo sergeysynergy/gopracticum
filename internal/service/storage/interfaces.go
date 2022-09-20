@@ -24,8 +24,6 @@ type Repo interface {
 
 type FileRepo interface {
 	WriteTicker() error
-	WriteMetrics() error
-	Shutdown() error
 
 	JustWriteMetrics(*metrics.ProxyMetrics) error
 }

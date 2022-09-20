@@ -157,25 +157,6 @@ func (fs *FileStore) restoreMetrics() error {
 	return nil
 }
 
-// writeMetrics Записывает показатели всех метрик в файл в JSON-формате.
-func (fs *FileStore) writeMetrics() error {
-	prm, _ := fs.repo.GetMetrics()
-
-	data, err := json.Marshal(&prm)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(fs.storeFile, data, 0777)
-	if err != nil {
-		return err
-	}
-
-	//log.Printf("written metrics to file '%s': gauges %d, counters %d", fs.storeFile, len(prm.Gauges), len(prm.Counters))
-	//return len(prm.Gauges) + len(prm.Counters), nil
-	return nil
-}
-
 // WriteTicker Асинхронно записывает метрики в файл с определённым интервалом.
 func (fs *FileStore) WriteTicker() error {
 	// тикер должен работать только когда задано имя файла
@@ -194,7 +175,8 @@ func (fs *FileStore) WriteTicker() error {
 		for {
 			select {
 			case <-ticker.C:
-				err := fs.WriteMetrics()
+				prm, _ := fs.repo.GetMetrics()
+				err := fs.JustWriteMetrics(prm)
 				if err != nil {
 					log.Println("[ERROR] Failed to write metrics to disk -", err)
 				}
@@ -203,31 +185,6 @@ func (fs *FileStore) WriteTicker() error {
 			}
 		}
 	}()
-
-	return nil
-}
-
-// WriteMetrics Записывает метрики в файл, сработает только если storeInterval равен 0.
-func (fs *FileStore) WriteMetrics() error {
-	if fs.storeFile != "" && fs.storeInterval == 0 {
-		err := fs.writeMetrics()
-		if err != nil {
-			return fmt.Errorf("failed to store metrics in repository")
-		}
-		return nil
-	}
-
-	return nil
-}
-
-// Shutdown Штатно завершает работу файлового хранилища, сохраняя перед выходом значения метрик в файл.
-func (fs *FileStore) Shutdown() error {
-	defer fs.cancel()
-
-	err := fs.writeMetrics()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
