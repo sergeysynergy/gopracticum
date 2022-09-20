@@ -9,9 +9,7 @@ func (e AppError) Error() string {
 }
 
 const (
-	UnknownError         AppError = "unknown error"
-	MetricNotImplemented AppError = "metric not implemented"
-
+	MetricNotImplemented   AppError = "metric not implemented"
 	ErrEmptyFilestoreName  AppError = "empty filestore name"
 	ErrFileStoreNotDefined AppError = "filestore not defined"
 )

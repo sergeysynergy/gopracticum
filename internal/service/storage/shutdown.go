@@ -1,10 +1,11 @@
 package storage
 
-func (s *Storage) Shutdown() error {
-	if s.fileRepo != nil {
-		//err := s.fileRepo.Shutdown()
+import "log"
 
-		//defer fs.cancel()
+func (s *Storage) Shutdown() error {
+	defer s.cancel()
+
+	if s.fileRepo != nil {
 		prm, err := s.repo.GetMetrics()
 		if err != nil {
 			return err
@@ -14,6 +15,7 @@ func (s *Storage) Shutdown() error {
 		if err != nil {
 			return err
 		}
+		log.Println("[DEBUG] Gracefully shutdown filestore")
 	}
 
 	if s.repo != nil {

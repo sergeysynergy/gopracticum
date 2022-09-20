@@ -69,15 +69,14 @@ func main() {
 	var _ storage.FileRepo = new(filestore.FileStore)
 	// Создадим файловое хранилище на базе Storage
 	fileStorer := filestore.New(
-		filestore.WithStorer(repo),
 		filestore.WithStoreFile(cfg.StoreFile),
-		filestore.WithStoreInterval(cfg.StoreInterval),
 	)
 
 	uc := storage.New(
 		storage.WithDBStorer(repo),
 		storage.WithFileStorer(fileStorer),
 		storage.WithRestore(cfg.Restore),
+		storage.WithStoreInterval(cfg.StoreInterval),
 	)
 
 	// Подключим обработчики запросов.

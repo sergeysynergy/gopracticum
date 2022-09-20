@@ -9,6 +9,7 @@ type UseCase interface {
 	FileRepo
 
 	SnapShotCreate() error
+	WriteTicker() error
 }
 
 type Repo interface {
@@ -25,8 +26,6 @@ type Repo interface {
 }
 
 type FileRepo interface {
-	WriteTicker() error
-
 	JustWriteMetrics(*metrics.ProxyMetrics) error
 	JustReadMetrics() (*metrics.ProxyMetrics, error)
 }

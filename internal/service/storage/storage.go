@@ -3,10 +3,12 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
+	"time"
 )
 
 var (
@@ -17,18 +19,28 @@ var (
 // Storage Описывает логику работы с хранилищем метрик; кэширует значения всех метрик в памяти;
 // сохраняет/извлекает метрики в БД.
 type Storage struct {
-	repo     Repo
-	fileRepo FileRepo
-	restore  bool
+	repo          Repo
+	fileRepo      FileRepo
+	ctx           context.Context
+	cancel        context.CancelFunc
+	restore       bool
+	storeInterval time.Duration // Интервал периодического сохранения метрик на диск, 0 — делает запись синхронной.
 }
 
 type Option func(storage *Storage)
 
 // New Создаёт новый объект хранилища метрик Storage.
 func New(opts ...Option) *Storage {
+	const defaultStoreInterval = 300 * time.Second
+
+	ctx, cancel := context.WithCancel(context.Background())
+
 	s := &Storage{
-		repo:     memory.New(),
-		fileRepo: nil,
+		ctx:           ctx,
+		cancel:        cancel,
+		repo:          memory.New(),
+		fileRepo:      nil,
+		storeInterval: defaultStoreInterval,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -60,10 +72,12 @@ func WithFileStorer(fr FileRepo) Option {
 // WithGauges Использует переданные значения gauge-метрик.
 func WithGauges(gauges map[string]metrics.Gauge) Option {
 	return func(s *Storage) {
-		//s.gauges = gauges
 		prm := metrics.NewProxyMetrics()
 		prm.Gauges = gauges
-		s.repo.Restore(prm)
+		err := s.repo.Restore(prm)
+		if err != nil {
+			log.Println("[ERROR] Failed to init storage with gauges")
+		}
 	}
 }
 
@@ -73,7 +87,10 @@ func WithCounters(counters map[string]metrics.Counter) Option {
 		//s.counters = counters
 		prm := metrics.NewProxyMetrics()
 		prm.Counters = counters
-		s.repo.Restore(prm)
+		err := s.repo.Restore(prm)
+		if err != nil {
+			log.Println("[ERROR] Failed to init storage with counters")
+		}
 	}
 }
 
@@ -81,6 +98,13 @@ func WithCounters(counters map[string]metrics.Counter) Option {
 func WithRestore(restore bool) Option {
 	return func(s *Storage) {
 		s.restore = restore
+	}
+}
+
+// WithStoreInterval Определяет интервал сохранения метрик в файл.
+func WithStoreInterval(interval time.Duration) Option {
+	return func(s *Storage) {
+		s.storeInterval = interval
 	}
 }
 
