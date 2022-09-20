@@ -38,7 +38,7 @@ func main() {
 	flag.StringVar(&cfg.ConfigFile, "c", cfg.ConfigFile, "path to file with public key")
 	flag.StringVar(&cfg.ConfigFile, "config", cfg.ConfigFile, "path to file with public key")
 	flag.StringVar(&cfg.Addr, "a", cfg.Addr, "address to listen on")
-	//flag.StringVar(&cfg.GRPCAddr, "ga", cfg.GRPCAddr, "gRPC server address to listen on")
+	flag.StringVar(&cfg.GRPCAddr, "ga", cfg.GRPCAddr, "gRPC server address to listen on")
 	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Postgres DSN")
 	flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "file to store metrics")
 	flag.StringVar(&cfg.Key, "k", cfg.Key, "sign key")
