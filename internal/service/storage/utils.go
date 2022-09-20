@@ -1,6 +1,9 @@
 package storage
 
-import serviceErrors "github.com/sergeysynergy/metricser/internal/service/errors"
+import (
+	serviceErrors "github.com/sergeysynergy/metricser/internal/service/errors"
+	"log"
+)
 
 func (s *Storage) snapShotRestore() (err error) {
 	if s.fileRepo == nil {
@@ -17,5 +20,6 @@ func (s *Storage) snapShotRestore() (err error) {
 		return err
 	}
 
+	log.Printf("[DEBUG] Metrics has been restored from filestore")
 	return nil
 }

@@ -19,6 +19,7 @@ var (
 type Storage struct {
 	repo     Repo
 	fileRepo FileRepo
+	restore  bool
 }
 
 type Option func(storage *Storage)
@@ -76,9 +77,18 @@ func WithCounters(counters map[string]metrics.Counter) Option {
 	}
 }
 
+// WithRestore Определяет флаг, нужно ли восстанавливать при запуске значения метрик из файла.
+func WithRestore(restore bool) Option {
+	return func(s *Storage) {
+		s.restore = restore
+	}
+}
+
 func (s *Storage) init() {
-	err := s.snapShotRestore()
-	if err != nil {
-		log.Printf("[WARNING] Failed to restore metrics from filestore - %s\n", err)
+	if s.restore {
+		err := s.snapShotRestore()
+		if err != nil {
+			log.Printf("[WARNING] Failed to restore metrics from filestore - %s\n", err)
+		}
 	}
 }

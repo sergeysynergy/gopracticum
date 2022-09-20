@@ -3,7 +3,6 @@ package filestore
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
 	serviceErrors "github.com/sergeysynergy/metricser/internal/service/errors"
@@ -11,8 +10,6 @@ import (
 	"log"
 	"os"
 	"time"
-
-	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 // FileStore содержит реализацию репозитория работы с БД, контекст выполнения;
@@ -23,7 +20,6 @@ type FileStore struct {
 	cancel        context.CancelFunc
 	storeFile     string        // Имя файла, где хранятся значения метрик (пустое значение — отключает функцию записи на диск).
 	storeInterval time.Duration // Интервал периодического сохранения метрик на диск, 0 — делает запись синхронной.
-	restore       bool
 	removeBroken  bool
 }
 
@@ -33,7 +29,6 @@ type Options func(fs *FileStore)
 func New(opts ...Options) *FileStore {
 	const (
 		defaultStoreFile     = "/tmp/devops-metrics-pgsql.json"
-		defaultRestore       = false
 		defaultStoreInterval = 300 * time.Second
 		defaultRemoveBroken  = false
 	)
@@ -45,7 +40,6 @@ func New(opts ...Options) *FileStore {
 		ctx:           ctx,
 		cancel:        cancel,
 		storeFile:     defaultStoreFile,
-		restore:       defaultRestore,
 		storeInterval: defaultStoreInterval,
 		removeBroken:  defaultRemoveBroken,
 	}
@@ -73,13 +67,6 @@ func WithStorer(repo storage.Repo) Options {
 		if repo != nil {
 			fs.repo = repo
 		}
-	}
-}
-
-// WithRestore Определяет флаг, нужно ли восстанавливать при запуске значения метрик из файла.
-func WithRestore(restore bool) Options {
-	return func(fs *FileStore) {
-		fs.restore = restore
 	}
 }
 
@@ -122,39 +109,6 @@ func (fs *FileStore) removeBrokenFile(err error) error {
 	}
 
 	return err
-}
-
-// restoreMetrics Считывает все метрики из файла.
-func (fs *FileStore) restoreMetrics() error {
-	if !fs.restore {
-		return nil
-	}
-
-	data, err := os.ReadFile(fs.storeFile)
-	if err != nil {
-		return fs.removeBrokenFile(err)
-	}
-
-	m := metrics.ProxyMetrics{}
-	err = json.Unmarshal(data, &m)
-	if err != nil {
-		return fs.removeBrokenFile(err)
-	}
-
-	if len(m.Gauges) == 0 && len(m.Counters) == 0 {
-		err = fmt.Errorf("metrics not found in file '%s'", fs.storeFile)
-		return fs.removeBrokenFile(err)
-	}
-
-	log.Println("Read metrics from file:", string(data))
-
-	err = fs.repo.Restore(&metrics.ProxyMetrics{Gauges: m.Gauges, Counters: m.Counters})
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Restored metrics from file '%s': gauges %d, counters %d", fs.storeFile, len(m.Gauges), len(m.Counters))
-	return nil
 }
 
 // WriteTicker Асинхронно записывает метрики в файл с определённым интервалом.
