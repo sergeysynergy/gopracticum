@@ -8,7 +8,6 @@ import (
 	serviceErrors "github.com/sergeysynergy/metricser/internal/service/errors"
 	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"log"
-	"os"
 	"time"
 )
 
@@ -52,12 +51,6 @@ func New(opts ...Options) *FileStore {
 		return nil
 	}
 
-	// проинициализируем файловое хранилище
-	err := fs.init()
-	if err != nil {
-		log.Fatal("[FATAL] File store initialization failed - ", err)
-	}
-
 	return fs
 }
 
@@ -82,33 +75,6 @@ func WithStoreInterval(interval time.Duration) Options {
 	return func(fs *FileStore) {
 		fs.storeInterval = interval
 	}
-}
-
-// Init производит инициализацию файлового хранилища.
-func (fs *FileStore) init() error {
-	//if fs.storeFile == "" {
-	//	return serviceErrors.ErrEmptyFilestoreName
-	//}
-	//
-	//err := fs.restoreMetrics()
-	//if err != nil {
-	//	log.Printf("[WARNING] Failed to restore metrics from file '%s' - %s\n", fs.storeFile, err)
-	//}
-
-	return nil
-}
-
-func (fs *FileStore) removeBrokenFile(err error) error {
-	if !fs.removeBroken {
-		return err
-	}
-
-	errRm := os.Remove(fs.storeFile)
-	if errRm != nil {
-		return errRm
-	}
-
-	return err
 }
 
 // WriteTicker Асинхронно записывает метрики в файл с определённым интервалом.
