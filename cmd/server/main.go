@@ -8,9 +8,9 @@ import (
 
 	"github.com/sergeysynergy/metricser/config"
 	"github.com/sergeysynergy/metricser/internal/service"
+	"github.com/sergeysynergy/metricser/internal/service/data/repository/filestore"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/pgsql"
-	"github.com/sergeysynergy/metricser/internal/service/filestore"
 	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/sergeysynergy/metricser/pkg/utils"
 )
