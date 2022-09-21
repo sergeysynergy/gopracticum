@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -23,13 +22,11 @@ func (a *Agent) sendGRPCReport(hm []metrics.Metrics) {
 	c := pb.NewMetricsClient(conn)
 
 	// функция, в которой будем отправлять сообщения
-	send(c, hm)
+	send(a.ctx, c, hm)
 }
 
 // sendReport Отправляет значения всех метрик на сервер.
-func send(c pb.MetricsClient, hm []metrics.Metrics) {
-	fmt.Println(":: GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC GRPC ::")
-
+func send(ctx context.Context, c pb.MetricsClient, hm []metrics.Metrics) {
 	prm := metrics.NewProxyMetrics()
 	gauges := make([]*pb.Gauge, 0, len(prm.Gauges))
 	counters := make([]*pb.Counter, 0, len(prm.Counters))
@@ -49,11 +46,12 @@ func send(c pb.MetricsClient, hm []metrics.Metrics) {
 		}
 	}
 
-	_, err := c.AddMetrics(context.Background(), &pb.AddMetricsRequest{
+	_, err := c.AddMetrics(ctx, &pb.AddMetricsRequest{
 		Gauges:   gauges,
 		Counters: counters,
 	})
 	if err != nil {
-		log.Println("[ERROR] Failed to add metrics -", err)
+		log.Println("[ERROR] Неудача отправки метрик -", err)
 	}
+	log.Println("[DEBUG] Метрики успешно отправлены на сервер по gRPC")
 }

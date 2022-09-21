@@ -55,7 +55,5 @@ func main() {
 		agent.WithPublicKey(pubKey),
 	)
 
-	//go http.ListenAndServe(":8091", nil) // запускаем сервер для нужд профилирования
-
 	a.Run()
 }

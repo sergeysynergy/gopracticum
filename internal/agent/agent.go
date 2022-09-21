@@ -16,6 +16,8 @@ import (
 )
 
 type Agent struct {
+	ctx            context.Context
+	cancel         context.CancelFunc
 	client         *resty.Client
 	storage        storage2.Repo
 	pollInterval   time.Duration
@@ -45,7 +47,11 @@ func New(opts ...Option) *Agent {
 
 	repo := storage2.New()
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	a := &Agent{
+		ctx:            ctx,
+		cancel:         cancel,
 		client:         resty.New(),
 		storage:        repo,
 		pollInterval:   defaultPollInterval,
@@ -108,14 +114,13 @@ func WithGRPC(grpc bool) Option {
 }
 
 func (a *Agent) Run() {
-	ctx, cancel := context.WithCancel(context.Background())
 	// Функцию cancel нужно обязательно выполнить в коде, иначе сборщик мусора не удалит созданный дочерний контекст
 	// и произойдёт утечка памяти.
-	defer cancel()
+	defer a.cancel()
 
-	go a.pollTicker(ctx)
-	go a.gopsutilTicker(ctx)
-	go a.reportTicker(ctx)
+	go a.pollTicker()
+	go a.gopsutilTicker()
+	go a.reportTicker()
 
 	// Агент должен штатно завершаться по сигналам: syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT.
 	c := make(chan os.Signal, 1)
