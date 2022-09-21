@@ -1,8 +1,10 @@
 package config
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"github.com/sergeysynergy/metricser/pkg/crypter"
 	"log"
 	"os"
 	"strings"
@@ -33,6 +35,7 @@ func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 
 type ServerConf struct {
 	Addr            string        `env:"ADDRESS" json:"address"`
+	GRPCAddr        string        `env:"GRPC_ADDRESS" json:"grpc_addr"`
 	StoreFile       string        `env:"STORE_FILE" json:"store_file"`
 	Restore         bool          `env:"RESTORE" json:"restore"`
 	MyStoreInterval Duration      `json:"store_interval"`
@@ -42,11 +45,13 @@ type ServerConf struct {
 	Key             string        `env:"KEY"`
 	TrustedSubnet   string        `env:"TRUSTED_SUBNET"`
 	ConfigFile      string
+	PrivateKey      *rsa.PrivateKey
 }
 
 func NewServerConf() *ServerConf {
 	defaultCfg := &ServerConf{
 		Addr:          "127.0.0.1:8080",
+		GRPCAddr:      ":3200",
 		StoreFile:     "/tmp/devops-metrics-pgsql.json",
 		Restore:       true,
 		StoreInterval: 300 * time.Second,
@@ -64,6 +69,16 @@ func NewServerConf() *ServerConf {
 	}
 
 	return defaultCfg
+}
+
+func (c *ServerConf) Init() {
+	pk, err := crypter.OpenPrivate(c.CryptoKey)
+	if err != nil {
+		log.Println("[WARNING] Failed to get private key -", err)
+	} else {
+		c.PrivateKey = pk
+		log.Println("[DEBUG] Encryption enabled using RSA")
+	}
 }
 
 type AgentConfig struct {

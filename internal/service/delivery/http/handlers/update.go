@@ -82,7 +82,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// запишем метрики в файл, если проинициализировано хранилище на базе файла
-	err = h.uc.WriteMetrics()
+	err = h.uc.SnapShotCreate()
 	if err != nil {
 		h.errorJSON(w, r, err.Error(), http.StatusInternalServerError)
 		return
