@@ -1,8 +1,9 @@
 syntax = "proto3";
+option go_package = "metricser/proto";
 
 package metricser;
 
-option go_package = "metricser/proto";
+import "google/protobuf/empty.proto";
 
 message Gauge {
   string id = 1;
@@ -14,14 +15,19 @@ message Counter {
   int64 delta = 2;
 }
 
+message ListMetricsResponse {
+  repeated Gauge gauges = 1;
+  repeated Counter counters = 2;
+}
 message ListMetricsRequest {
 }
 
-message ListMetricsResponse {
+message AddMetricsRequest {
   repeated Gauge gauges = 1;
   repeated Counter counters = 2;
 }
 
 service Metrics {
-  rpc ListMetrics(ListMetricsRequest) returns (ListMetricsResponse);
+  rpc AddMetrics(AddMetricsRequest) returns (google.protobuf.Empty);
+  rpc ListMetrics(google.protobuf.Empty) returns (ListMetricsResponse);
 }

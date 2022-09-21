@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -22,7 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
-	ListMetrics(ctx context.Context, in *ListMetricsRequest, opts ...grpc.CallOption) (*ListMetricsResponse, error)
+	AddMetrics(ctx context.Context, in *AddMetricsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListMetrics(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListMetricsResponse, error)
 }
 
 type metricsClient struct {
@@ -33,7 +35,16 @@ func NewMetricsClient(cc grpc.ClientConnInterface) MetricsClient {
 	return &metricsClient{cc}
 }
 
-func (c *metricsClient) ListMetrics(ctx context.Context, in *ListMetricsRequest, opts ...grpc.CallOption) (*ListMetricsResponse, error) {
+func (c *metricsClient) AddMetrics(ctx context.Context, in *AddMetricsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/metricser.Metrics/AddMetrics", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metricsClient) ListMetrics(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListMetricsResponse, error) {
 	out := new(ListMetricsResponse)
 	err := c.cc.Invoke(ctx, "/metricser.Metrics/ListMetrics", in, out, opts...)
 	if err != nil {
@@ -46,7 +57,8 @@ func (c *metricsClient) ListMetrics(ctx context.Context, in *ListMetricsRequest,
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
-	ListMetrics(context.Context, *ListMetricsRequest) (*ListMetricsResponse, error)
+	AddMetrics(context.Context, *AddMetricsRequest) (*emptypb.Empty, error)
+	ListMetrics(context.Context, *emptypb.Empty) (*ListMetricsResponse, error)
 	mustEmbedUnimplementedMetricsServer()
 }
 
@@ -54,7 +66,10 @@ type MetricsServer interface {
 type UnimplementedMetricsServer struct {
 }
 
-func (UnimplementedMetricsServer) ListMetrics(context.Context, *ListMetricsRequest) (*ListMetricsResponse, error) {
+func (UnimplementedMetricsServer) AddMetrics(context.Context, *AddMetricsRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMetrics not implemented")
+}
+func (UnimplementedMetricsServer) ListMetrics(context.Context, *emptypb.Empty) (*ListMetricsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMetrics not implemented")
 }
 func (UnimplementedMetricsServer) mustEmbedUnimplementedMetricsServer() {}
@@ -70,8 +85,26 @@ func RegisterMetricsServer(s grpc.ServiceRegistrar, srv MetricsServer) {
 	s.RegisterService(&Metrics_ServiceDesc, srv)
 }
 
+func _Metrics_AddMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddMetricsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricsServer).AddMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/metricser.Metrics/AddMetrics",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricsServer).AddMetrics(ctx, req.(*AddMetricsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Metrics_ListMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListMetricsRequest)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,7 +116,7 @@ func _Metrics_ListMetrics_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/metricser.Metrics/ListMetrics",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServer).ListMetrics(ctx, req.(*ListMetricsRequest))
+		return srv.(MetricsServer).ListMetrics(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -95,6 +128,10 @@ var Metrics_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "metricser.Metrics",
 	HandlerType: (*MetricsServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddMetrics",
+			Handler:    _Metrics_AddMetrics_Handler,
+		},
 		{
 			MethodName: "ListMetrics",
 			Handler:    _Metrics_ListMetrics_Handler,

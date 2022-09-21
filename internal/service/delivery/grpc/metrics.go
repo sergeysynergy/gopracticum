@@ -2,13 +2,18 @@ package grpc
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/sergeysynergy/metricser/internal/service/storage"
+	"github.com/sergeysynergy/metricser/pkg/metrics"
 	pb "github.com/sergeysynergy/metricser/proto"
 )
 
 // MetricsServer поддерживает все необходимые методы сервера.
 type MetricsServer struct {
-	// нужно встраивать тип pb.Unimplemented<TypeName>
+	// Нужно встраивать тип pb.Unimplemented<TypeName>
 	// для совместимости с будущими версиями
 	pb.UnimplementedMetricsServer
 
@@ -22,8 +27,28 @@ func New(uc storage.UseCase) *MetricsServer {
 	}
 }
 
+// AddMetrics реализует интерфейс добавления списка метрик.
+func (s *MetricsServer) AddMetrics(_ context.Context, in *pb.AddMetricsRequest) (*empty.Empty, error) {
+	prm := metrics.NewProxyMetrics()
+
+	// Преобразуем формат метрик proto-файла к внутреннему формату.
+	for _, v := range in.Gauges {
+		prm.Gauges[v.Id] = metrics.Gauge(v.Value)
+	}
+	for _, v := range in.Counters {
+		prm.Counters[v.Id] = metrics.Counter(v.Delta)
+	}
+
+	err := s.uc.PutMetrics(prm)
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, err.Error())
+	}
+
+	return &empty.Empty{}, nil
+}
+
 // ListMetrics реализует интерфейс получения списка метрик.
-func (s *MetricsServer) ListMetrics(ctx context.Context, in *pb.ListMetricsRequest) (*pb.ListMetricsResponse, error) {
+func (s *MetricsServer) ListMetrics(_ context.Context, _ *empty.Empty) (*pb.ListMetricsResponse, error) {
 	prm, _ := s.uc.GetMetrics()
 
 	gauges := make([]*pb.Gauge, 0, len(prm.Gauges))

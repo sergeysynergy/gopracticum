@@ -4,16 +4,10 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"github.com/sergeysynergy/metricser/internal/service/data/repository/memory"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	"log"
 	"time"
-)
-
-var (
-	ErrNotImplemented = errors.New("metrics not implemented")
-	ErrNotFound       = errors.New("metrics not found")
 )
 
 // Storage Описывает логику работы с хранилищем метрик; кэширует значения всех метрик в памяти;

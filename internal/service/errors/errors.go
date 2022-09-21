@@ -12,4 +12,5 @@ const (
 	MetricNotImplemented   AppError = "metric not implemented"
 	ErrEmptyFilestoreName  AppError = "empty filestore name"
 	ErrFileStoreNotDefined AppError = "filestore not defined"
+	ErrEmptyProxyMetrics   AppError = "empty proxy metrics values"
 )
