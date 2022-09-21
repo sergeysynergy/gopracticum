@@ -20,6 +20,7 @@ type Agent struct {
 	storage        storage2.Repo
 	pollInterval   time.Duration
 	reportInterval time.Duration
+	grpc           bool
 	protocol       string
 	addr           string
 	key            string
@@ -97,6 +98,12 @@ func WithReportInterval(duration time.Duration) Option {
 func WithKey(key string) Option {
 	return func(a *Agent) {
 		a.key = key
+	}
+}
+
+func WithGRPC(grpc bool) Option {
+	return func(a *Agent) {
+		a.grpc = grpc
 	}
 }
 
