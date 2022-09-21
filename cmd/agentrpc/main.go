@@ -49,6 +49,7 @@ func main() {
 	// в качестве метрик выступают различные системные характеристики машины, на которой запущен агент
 	a := agent.New(
 		agent.WithAddress(cfg.Addr),
+		agent.WithGRPCAddress(cfg.GRPCAddr),
 		agent.WithReportInterval(cfg.ReportInterval),
 		agent.WithPollInterval(cfg.PollInterval),
 		agent.WithKey(cfg.Key),

@@ -12,7 +12,7 @@ import (
 
 func (a *Agent) sendGRPCReport(hm []metrics.Metrics) {
 	// устанавливаем соединение с сервером
-	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(a.gRPCaddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}

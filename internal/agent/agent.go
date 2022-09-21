@@ -25,6 +25,7 @@ type Agent struct {
 	grpc           bool
 	protocol       string
 	addr           string
+	gRPCaddr       string
 	key            string
 	publicKey      *rsa.PublicKey
 }
@@ -81,6 +82,14 @@ func WithAddress(addr string) Option {
 	return func(a *Agent) {
 		if addr != "" {
 			a.addr = addr
+		}
+	}
+}
+
+func WithGRPCAddress(gRPCaddr string) Option {
+	return func(a *Agent) {
+		if gRPCaddr != "" {
+			a.gRPCaddr = gRPCaddr
 		}
 	}
 }
