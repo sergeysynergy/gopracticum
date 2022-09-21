@@ -9,13 +9,13 @@ import (
 )
 
 // Выполняем регулярную отправку метрик на сервер пока не пришёл сигнал отмены.
-func (a *Agent) reportTicker(ctx context.Context) {
+func (a *Agent) reportTicker() {
 	ticker := time.NewTicker(a.reportInterval)
 	for {
 		select {
 		case <-ticker.C:
-			a.report(ctx)
-		case <-ctx.Done():
+			a.report(a.ctx)
+		case <-a.ctx.Done():
 			log.Println("[INFO] Штатное завершение работы отправки метрик")
 			ticker.Stop()
 			return

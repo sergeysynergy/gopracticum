@@ -83,6 +83,7 @@ func (c *ServerConf) Init() {
 
 type AgentConfig struct {
 	Addr             string        `env:"ADDRESS" json:"address"`
+	GRPCAddr         string        `env:"GRPC_ADDRESS" json:"grpc_addr"`
 	MyReportInterval Duration      `json:"report_interval"`
 	MyPollInterval   Duration      `json:"poll_interval"`
 	ReportInterval   time.Duration `env:"REPORT_INTERVAL"`
@@ -95,6 +96,7 @@ type AgentConfig struct {
 func NewAgentConf() *AgentConfig {
 	defaultCfg := &AgentConfig{
 		Addr:           "127.0.0.1:8080",
+		GRPCAddr:       ":3200",
 		ReportInterval: 10 * time.Second,
 		PollInterval:   2 * time.Second,
 	}

@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"fmt"
 	"github.com/shirou/gopsutil/v3/mem"
 	"log"
@@ -12,13 +11,13 @@ import (
 )
 
 // Выполняем регулярное обновление метрик посредством пакета `gopsutil` пока не пришёл сигнал отмены.
-func (a *Agent) gopsutilTicker(ctx context.Context) {
+func (a *Agent) gopsutilTicker() {
 	ticker := time.NewTicker(a.pollInterval)
 	for {
 		select {
 		case <-ticker.C:
 			a.gopsutilUpdate()
-		case <-ctx.Done():
+		case <-a.ctx.Done():
 			log.Println("[INFO] Штатное завершение работы обновления метрик")
 			ticker.Stop()
 			return

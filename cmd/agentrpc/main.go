@@ -56,7 +56,5 @@ func main() {
 		agent.WithGRPC(true),
 	)
 
-	//go http.ListenAndServe(":8091", nil) // запускаем сервер для нужд профилирования
-
 	a.Run()
 }
