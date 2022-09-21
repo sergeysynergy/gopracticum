@@ -9,7 +9,7 @@ func (e AppError) Error() string {
 }
 
 const (
-	MetricNotImplemented   AppError = "metric not implemented"
+	MetricNotImplemented   AppError = "metrics not implemented"
 	ErrEmptyFilestoreName  AppError = "empty filestore name"
 	ErrFileStoreNotDefined AppError = "filestore not defined"
 	ErrEmptyProxyMetrics   AppError = "empty proxy metrics values"
