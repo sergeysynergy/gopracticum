@@ -119,7 +119,7 @@ func TestStorageGet(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, m, tt.want.delta)
 			default:
-				assert.EqualError(t, err, ErrNotFound.Error())
+				assert.EqualError(t, err, serviceErrors.MetricNotImplemented.Error())
 			}
 		})
 	}
