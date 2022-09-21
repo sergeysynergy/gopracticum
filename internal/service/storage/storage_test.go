@@ -1,6 +1,7 @@
 package storage
 
 import (
+	serviceErrors "github.com/sergeysynergy/metricser/internal/service/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -55,7 +56,7 @@ func TestStoragePut(t *testing.T) {
 			}
 
 			if tt.want.wantErr {
-				assert.EqualError(t, err, ErrNotImplemented.Error())
+				assert.EqualError(t, err, serviceErrors.MetricNotImplemented.Error())
 				return
 			}
 
