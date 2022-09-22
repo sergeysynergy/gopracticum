@@ -2,13 +2,14 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 	pb "github.com/sergeysynergy/metricser/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // MetricsServer поддерживает все необходимые методы сервера.
@@ -28,9 +29,22 @@ func New(uc storage.UseCase) *MetricsServer {
 }
 
 // AddMetrics реализует интерфейс добавления списка метрик.
-func (s *MetricsServer) AddMetrics(_ context.Context, in *pb.AddMetricsRequest) (*empty.Empty, error) {
-	prm := metrics.NewProxyMetrics()
+func (s *MetricsServer) AddMetrics(ctx context.Context, in *pb.AddMetricsRequest) (*empty.Empty, error) {
+	var token string
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		values := md.Get("token")
+		if len(values) > 0 {
+			// ключ содержит слайс строк, получаем первую строку
+			token = values[0]
+		}
+	}
 
+	if token == "crypted" {
+		fmt.Println("need encryption")
+	}
+
+	prm := metrics.NewProxyMetrics()
 	// Преобразуем формат метрик proto-файла к внутреннему формату.
 	for _, v := range in.Gauges {
 		prm.Gauges[v.Id] = metrics.Gauge(v.Value)
