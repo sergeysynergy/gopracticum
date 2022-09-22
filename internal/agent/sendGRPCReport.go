@@ -59,7 +59,7 @@ func send(ctx context.Context, publicKey *rsa.PublicKey, c pb.MetricsClient, hm 
 		//	log.Println("[INFO] Тело запроса было зашифровано")
 		//}
 	}
-	ctx = metadata.NewOutgoingContext(context.Background(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 	log.Println("[DEBUG] Метрики успешно отправлены на сервер по gRPC")
 
 	// отправим метрики на сервер
