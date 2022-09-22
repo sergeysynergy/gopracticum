@@ -29,10 +29,10 @@ func (a *Agent) sendGRPCReport(hm []metrics.Metrics) {
 
 // sendReport Отправляет значения всех метрик на сервер.
 func send(ctx context.Context, publicKey *rsa.PublicKey, c pb.MetricsClient, hm []metrics.Metrics) {
+	// Преобразуем метрики для отправки на сервер.
 	prm := metrics.NewProxyMetrics()
 	gauges := make([]*pb.Gauge, 0, len(prm.Gauges))
 	counters := make([]*pb.Counter, 0, len(prm.Counters))
-
 	for _, v := range hm {
 		switch v.MType {
 		case "gauge":
@@ -48,9 +48,11 @@ func send(ctx context.Context, publicKey *rsa.PublicKey, c pb.MetricsClient, hm 
 		}
 	}
 
+	// Зашифруем метрики, если определён ключ для шифрования
 	md := metadata.MD{}
 	if publicKey != nil {
 		md = metadata.New(map[string]string{"token": "crypted"})
+		log.Println("[DEBUG] TODO: надо добавить шифрование")
 		//bodyEncrypt, errEncrypt := crypter.Encrypt(publicKey, byte(prm))
 		//if errEncrypt != nil {
 		//	log.Println("[WARNING] Не удалось зашифровать тело запроса", err)
@@ -60,7 +62,6 @@ func send(ctx context.Context, publicKey *rsa.PublicKey, c pb.MetricsClient, hm 
 		//}
 	}
 	ctx = metadata.NewOutgoingContext(ctx, md)
-	log.Println("[DEBUG] Метрики успешно отправлены на сервер по gRPC")
 
 	// отправим метрики на сервер
 	_, err := c.AddMetrics(ctx, &pb.AddMetricsRequest{
@@ -70,4 +71,6 @@ func send(ctx context.Context, publicKey *rsa.PublicKey, c pb.MetricsClient, hm 
 	if err != nil {
 		log.Println("[ERROR] Неудача отправки метрик -", err)
 	}
+
+	log.Println("[DEBUG] Метрики успешно отправлены на сервер по gRPC")
 }

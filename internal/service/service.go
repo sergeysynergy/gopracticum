@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"crypto/rsa"
-	serviceGRPC "github.com/sergeysynergy/metricser/internal/service/delivery/grpc"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/sergeysynergy/metricser/config"
 	serviceConst "github.com/sergeysynergy/metricser/internal/service/consts"
+	serviceGRPC "github.com/sergeysynergy/metricser/internal/service/delivery/grpc"
 	serviceHTTP "github.com/sergeysynergy/metricser/internal/service/delivery/http"
 	"github.com/sergeysynergy/metricser/internal/service/delivery/http/handlers"
 	"github.com/sergeysynergy/metricser/internal/service/storage"
@@ -45,9 +45,12 @@ func (s *Service) init() {
 
 func (s *Service) initGRPCServer() {
 	// создаём gRPC-сервер без зарегистрированной службы
-	s.grpcServer = grpc.NewServer()
+	//s.grpcServer = grpc.NewServer()
+
+	// создаём gRPC-сервер с перехватчиком
+	s.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(serviceGRPC.UnaryEncrypt))
+
 	// регистрируем сервис
-	//pb.RegisterUsersServer(s.grpcServer, &serviceGRPC.UsersServer{})
 	service := serviceGRPC.New(s.uc)
 	pb.RegisterMetricsServer(s.grpcServer, service)
 }
