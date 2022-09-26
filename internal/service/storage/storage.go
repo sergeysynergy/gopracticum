@@ -103,10 +103,12 @@ func WithStoreInterval(interval time.Duration) Option {
 }
 
 func (s *Storage) init() {
-	if s.restore {
-		err := s.snapShotRestore()
-		if err != nil {
-			log.Printf("[WARNING] Failed to restore metrics from filestore - %s\n", err)
-		}
+	if !s.restore {
+		return
+	}
+
+	err := s.snapShotRestore()
+	if err != nil {
+		log.Printf("[WARNING] Failed to restore metrics from filestore - %s\n", err)
 	}
 }
