@@ -6,19 +6,13 @@ import (
 	"sort"
 )
 
-const listTemplate = `
-<h1>Current metrics data</h1>
+const listTemplate = `<h1>Current metrics data</h1>
 {{if .Gauges}}
-	<h2>Gauges:</h1>
-	{{range .Gauges}}
-		<div>{{.Key}} - {{.Value}}</div>
-	{{end}}
+<h2>Gauges:</h1>
+{{range .Gauges}}<div>{{.Key}} - {{.Value}}</div>{{end}}
 {{end}}
 {{if .Counters}}
-	<h2>Counters:</h1>
-	{{range .Counters}}
-		<div>{{.Key}} - {{.Delta}}</div>
-	{{end}}
+<h2>Counters:</h1>{{range .Counters}}<div>{{.Key}} - {{.Delta}}</div>{{end}}
 {{end}}
 `
 

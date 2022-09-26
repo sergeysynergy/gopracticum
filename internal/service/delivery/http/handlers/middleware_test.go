@@ -105,7 +105,7 @@ func TestGzipDecompressor(t *testing.T) {
 func TestGzipCompressor(t *testing.T) {
 	type want struct {
 		statusCode  int
-		body        []byte
+		body        string
 		contentType string
 	}
 	tests := []struct {
@@ -117,8 +117,15 @@ func TestGzipCompressor(t *testing.T) {
 			name:        "Test gzip compression",
 			contentType: "html/text",
 			want: want{
-				statusCode:  http.StatusOK,
-				body:        []byte(`<h1>Current metrics data:</h1><div><h2>Gauges</h2><div>Alloc - 1221.23</div></div><div><h2>Counters</h2></div>`),
+				statusCode: http.StatusOK,
+				body: `<h1>Current metrics data</h1>
+
+<h2>Gauges:</h1>
+<div>Alloc - 1221.23</div>
+
+
+`,
+
 				contentType: textHTML,
 			},
 		},
@@ -143,7 +150,8 @@ func TestGzipCompressor(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode())
 			assert.Equal(t, tt.want.contentType, resp.Header().Get("Content-Type"))
 			assert.Equal(t, "gzip", resp.Header().Get("Content-Encoding"))
-			assert.Equal(t, tt.want.body, resp.Body())
+
+			assert.Equal(t, tt.want.body, string(resp.Body()))
 		})
 	}
 }
