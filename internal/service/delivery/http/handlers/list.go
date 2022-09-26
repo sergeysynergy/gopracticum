@@ -1,51 +1,76 @@
 package handlers
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/sergeysynergy/metricser/pkg/metrics"
+	"html/template"
 	"net/http"
 	"sort"
-	"strconv"
 )
+
+const listTemplate = `
+<h1>Current metrics data</h1>
+{{if .Gauges}}
+	<h2>Gauges:</h1>
+	{{range .Gauges}}
+		<div>{{.Key}} - {{.Value}}</div>
+	{{end}}
+{{end}}
+{{if .Counters}}
+	<h2>Counters:</h1>
+	{{range .Counters}}
+		<div>{{.Key}} - {{.Delta}}</div>
+	{{end}}
+{{end}}
+`
 
 // List Возвращает список со значением всех метрик.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	type (
+		gauge struct {
+			Key   string
+			Value float64
+		}
+		counter struct {
+			Key   string
+			Delta int64
+		}
+		metrics struct {
+			Gauges   []gauge
+			Counters []counter
+		}
+	)
+
 	w.Header().Set("content-type", textHTML)
 	w.WriteHeader(http.StatusOK)
 
-	var b bytes.Buffer
-	b.WriteString("<h1>Current metrics data:</h1>")
-
-	type gauge struct {
-		key   string
-		value float64
-	}
-
-	mcs, err := h.uc.GetMetrics()
+	prm, err := h.uc.GetMetrics()
 	if err != nil {
 		h.errorJSON(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	gauges := make([]gauge, 0, metrics.TypeGaugeLen)
-	for k, val := range mcs.Gauges {
-		gauges = append(gauges, gauge{key: k, value: float64(val)})
+	gauges := make([]gauge, 0, len(prm.Gauges))
+	for k, val := range prm.Gauges {
+		gauges = append(gauges, gauge{Key: k, Value: float64(val)})
 	}
-	sort.Slice(gauges, func(i, j int) bool { return gauges[i].key < gauges[j].key })
+	sort.Slice(gauges, func(i, j int) bool { return gauges[i].Key < gauges[j].Key })
 
-	b.WriteString(`<div><h2>Gauges</h2>`)
-	for _, g := range gauges {
-		val := strconv.FormatFloat(g.value, 'f', -1, 64)
-		b.WriteString(fmt.Sprintf("<div>%s - %v</div>", g.key, val))
+	counters := make([]counter, 0, len(prm.Counters))
+	for k, val := range prm.Counters {
+		counters = append(counters, counter{Key: k, Delta: int64(val)})
 	}
-	b.WriteString(`</div>`)
+	sort.Slice(counters, func(i, j int) bool { return counters[i].Key < counters[j].Key })
 
-	b.WriteString(`<div><h2>Counters</h2>`)
-	for k, val := range mcs.Counters {
-		b.WriteString(fmt.Sprintf("<div>%s - %d</div>", k, val))
+	mcs := metrics{
+		Gauges:   gauges,
+		Counters: counters,
 	}
-	b.WriteString(`</div>`)
 
-	w.Write(b.Bytes())
+	t, err := template.New("list").Parse(listTemplate)
+	if err != nil {
+		panic(err)
+	}
+	err = t.ExecuteTemplate(w, "list", mcs)
+	if err != nil {
+		panic(err)
+	}
 }
