@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/sergeysynergy/metricser/internal/service/storage"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sergeysynergy/metricser/internal/handlers"
+	"github.com/sergeysynergy/metricser/internal/service/delivery/http/handlers"
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
@@ -141,7 +142,8 @@ func TestAgentSendJsonRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := handlers.New(handlers.WithKey(tt.key))
+			handler := handlers.New(storage.New(),
+				handlers.WithKey(tt.key))
 			ts := httptest.NewServer(handler.GetRouter())
 			defer ts.Close()
 

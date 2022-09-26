@@ -2,24 +2,21 @@ package agent
 
 import (
 	"context"
-	"fmt"
-	"github.com/go-resty/resty/v2"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/sergeysynergy/metricser/pkg/metrics"
 )
 
 // Выполняем регулярную отправку метрик на сервер пока не пришёл сигнал отмены.
-func (a *Agent) reportTicker(ctx context.Context) {
+func (a *Agent) reportTicker() {
 	ticker := time.NewTicker(a.reportInterval)
 	for {
 		select {
 		case <-ticker.C:
-			a.report(ctx)
-		case <-ctx.Done():
-			log.Println("Штатное завершение работы отправки метрик")
+			a.report(a.ctx)
+		case <-a.ctx.Done():
+			log.Println("[INFO] Штатное завершение работы отправки метрик")
 			ticker.Stop()
 			return
 		}
@@ -75,33 +72,15 @@ func (a *Agent) report(ctx context.Context) {
 		return
 	}
 
-	_, err = a.sendReport(ctx, hm)
+	if a.grpc {
+		a.sendGRPCReport(hm)
+	} else {
+		_, err = a.sendHTTPReport(ctx, hm)
+	}
 	if err != nil {
 		a.handleError(err)
 		return
 	}
 
-	log.Println("Выполнена отправка отчёта")
-}
-
-func (a *Agent) sendReport(ctx context.Context, hm []metrics.Metrics) (*resty.Response, error) {
-	endpoint := a.protocol + a.addr + "/updates/"
-
-	resp, err := a.client.R().
-		SetHeader("Accept", "application/json").
-		SetHeader("Accept-Encoding", "gzip").
-		SetHeader("Content-Type", "application/json").
-		SetContext(ctx).
-		SetBody(hm).
-		Post(endpoint)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return resp, fmt.Errorf("invalid status code %v", resp.StatusCode())
-	}
-
-	return resp, nil
+	log.Println("[INFO] Выполнена отправка отчёта")
 }

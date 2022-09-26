@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -12,14 +11,14 @@ import (
 )
 
 // Выполняем регулярное обновление метрик пока не пришёл сигнал отмены.
-func (a *Agent) pollTicker(ctx context.Context) {
+func (a *Agent) pollTicker() {
 	ticker := time.NewTicker(a.pollInterval)
 	for {
 		select {
 		case <-ticker.C:
 			a.pollUpdate()
-		case <-ctx.Done():
-			log.Println("Штатное завершение работы обновления метрик")
+		case <-a.ctx.Done():
+			log.Println("[INFO] Штатное завершение работы обновления метрик")
 			ticker.Stop()
 			return
 		}
@@ -71,5 +70,5 @@ func (a *Agent) pollUpdate() {
 		a.handleError(fmt.Errorf("ошибка обновления метрик - %w", err))
 	}
 
-	log.Println("Выполнено обновление метрик")
+	log.Println("[INFO] Выполнено обновление метрик")
 }

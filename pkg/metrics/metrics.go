@@ -1,3 +1,4 @@
+// Package metrics Пакет описывает структуру метрик и базовые методы для работы с ними.
 package metrics
 
 import (
@@ -145,8 +146,8 @@ type ProxyMetrics struct {
 }
 
 // NewProxyMetrics Создаёт новый объект типа ProxyMetrics.
-func NewProxyMetrics() ProxyMetrics {
-	return ProxyMetrics{
+func NewProxyMetrics() *ProxyMetrics {
+	return &ProxyMetrics{
 		Gauges:   make(map[string]Gauge, TypeGaugeLen),
 		Counters: make(map[string]Counter, TypeCounterLen),
 	}
